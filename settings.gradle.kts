@@ -9,5 +9,5 @@ pluginManagement {
 }
 
 rootProject.name = "bson-model3"
-include(":bom")
-include(":core")
+include(":bson-model3-bom")
+include(":bson-model3-core")
