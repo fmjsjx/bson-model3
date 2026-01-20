@@ -12,14 +12,16 @@ repositories {
 dependencies {
     // libcommon-bom
     api(platform("com.github.fmjsjx:libcommon-bom:4.1.0"))
-    // junit-bom
-    testImplementation(platform("org.junit:junit-bom:6.0.1"))
     // mongodb-driver-bom
     api(platform("org.mongodb:mongodb-driver-bom:5.6.2"))
     // log4j2
     implementation(platform("org.apache.logging.log4j:log4j-bom:2.25.3"))
+    // junit-bom
+    testImplementation(platform("org.junit:junit-bom:6.0.1"))
 
     constraints {
+        // JSpecify
+        compileOnly("org.jspecify:jspecify:1.0.0")
         implementation("org.slf4j:slf4j-api:2.0.17")
         implementation("ch.qos.logback:logback-classic:1.5.24")
         api("com.jsoniter:jsoniter:0.9.23")
@@ -56,7 +58,7 @@ tasks.withType<JavaCompile> {
     options.release = javaVersion
 }
 
-tasks.withType<Javadoc>() {
+tasks.withType<Javadoc> {
     if (JavaVersion.current().isJava9Compatible) {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }

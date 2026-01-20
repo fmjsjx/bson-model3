@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    compileOnly("org.jspecify:jspecify")
 
     implementation("org.slf4j:slf4j-api")
 
