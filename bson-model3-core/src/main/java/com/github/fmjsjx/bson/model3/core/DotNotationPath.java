@@ -22,7 +22,9 @@ public interface DotNotationPath {
      * @param index the index to be resolved
      * @return a new {@code DotNotationPath}
      */
-    DotNotationPath resolve(int index);
+    default DotNotationPath resolve(int index) {
+        return resolve(String.valueOf(index));
+    }
 
     /**
      * Returns the path.
@@ -39,6 +41,28 @@ public interface DotNotationPath {
      */
     default boolean isRootPath() {
         return getPath().isEmpty();
+    }
+
+    /**
+     * Returns the path that the specified {@code key} has been appended.
+     *
+     * @param key the key
+     * @return the path that the specified key has been appended
+     */
+    default String path(Object key) {
+        var path = key.toString();
+        return isRootPath() ? path : getPath() + "." + path;
+    }
+
+    /**
+     * Returns the path that the specified {@code index} has been
+     * appended.
+     *
+     * @param index the index
+     * @return the path that the specified index has been appended
+     */
+    default String path(int index) {
+        return path(String.valueOf(index));
     }
 
 }

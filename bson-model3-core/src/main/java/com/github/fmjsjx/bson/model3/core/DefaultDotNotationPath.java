@@ -43,17 +43,17 @@ class DefaultDotNotationPath implements DotNotationPath {
     }
 
     @Override
-    public DotNotationPath resolve(int index) {
-        return new DefaultDotNotationPath(append(paths, String.valueOf(index)));
-    }
-
-    @Override
     public String getPath() {
         var path = this.path;
         if (path == null) {
             this.path = path = String.join(".", paths);
         }
         return path;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultDotNotationPath(path=" + getPath() + ")";
     }
 
 }

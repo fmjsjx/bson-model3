@@ -94,4 +94,76 @@ public class DefaultDotNotationPathTests {
         DotNotationPath resolved = path.resolve(complexKey);
         assertEquals("parent.complexKey", resolved.getPath());
     }
+
+    @Test
+    void testIsRootPath() {
+        DotNotationPath emptyPath = new DefaultDotNotationPath();
+        assertTrue(emptyPath.isRootPath(), "Empty path should be root path");
+
+        DotNotationPath nonEmptyPath = new DefaultDotNotationPath("field");
+        assertFalse(nonEmptyPath.isRootPath(), "Non-empty path should not be root path");
+    }
+
+    @Test
+    void testPathWithStringKey() {
+        DotNotationPath rootPath = new DefaultDotNotationPath();
+        assertEquals("field", rootPath.path("field"), "Root path should append key directly");
+
+        DotNotationPath path = new DefaultDotNotationPath("parent");
+        assertEquals("parent.child", path.path("child"), "Non-root path should append key with dot separator");
+    }
+
+    @Test
+    void testPathWithIntegerKey() {
+        DotNotationPath path = new DefaultDotNotationPath("array");
+        assertEquals("array.5", path.path(Integer.valueOf(5)), "Should append integer key as string");
+    }
+
+    @Test
+    void testPathWithIndex() {
+        DotNotationPath rootPath = new DefaultDotNotationPath();
+        assertEquals("0", rootPath.path(0), "Root path should append index directly");
+
+        DotNotationPath path = new DefaultDotNotationPath("list");
+        assertEquals("list.3", path.path(3), "Non-root path should append index with dot separator");
+    }
+
+    @Test
+    void testPathWithNegativeIndex() {
+        DotNotationPath path = new DefaultDotNotationPath("array");
+        assertEquals("array.-1", path.path(-1), "Should handle negative index");
+    }
+
+    @Test
+    void testPathWithSpecialCharacters() {
+        DotNotationPath path = new DefaultDotNotationPath("parent");
+        assertEquals("parent.$field", path.path("$field"), "Should handle $ character");
+        assertEquals("parent.field.name", path.path("field.name"), "Should handle dot in key");
+    }
+
+    @Test
+    void testToString() {
+        DotNotationPath path = new DefaultDotNotationPath("field1", "field2");
+        String str = path.toString();
+        assertTrue(str.contains("field1.field2"), "toString should contain the path");
+        assertTrue(str.contains("DefaultDotNotationPath"), "toString should contain class name");
+    }
+
+    @Test
+    void testMultipleFieldsPath() {
+        DotNotationPath path = new DefaultDotNotationPath("a", "b", "c", "d");
+        assertEquals("a.b.c.d", path.getPath(), "Should correctly join multiple fields");
+    }
+
+    @Test
+    void testPathWithComplexObject() {
+        DotNotationPath path = new DefaultDotNotationPath("root");
+        Object complexKey = new Object() {
+            @Override
+            public String toString() {
+                return "custom";
+            }
+        };
+        assertEquals("root.custom", path.path(complexKey), "Should use toString() of complex object");
+    }
 }
