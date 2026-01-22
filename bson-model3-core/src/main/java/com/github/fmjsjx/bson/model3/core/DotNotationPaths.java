@@ -34,6 +34,7 @@ public class DotNotationPaths {
     private static final AtomicBoolean cacheDepthConfigured = new AtomicBoolean();
 
     private static final ConcurrentMap<String, CachedDotNotationPath> cached = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<CachedDotNotationPath, ConcurrentHashMap<String, DotNotationPath>> cascadeCached = new ConcurrentHashMap<>();
 
     /**
      * Returns the singleton instance of {@link DotNotationPath} which
@@ -108,7 +109,8 @@ public class DotNotationPaths {
     }
 
     /**
-     * Sets whether the cache feature is enabled or not.
+     * Sets whether the cache feature is enabled or not, only for
+     * internal use.
      *
      * @param useCache {@code true} if the cache feature is enabled,
      *                 {@code false} otherwise
@@ -117,6 +119,7 @@ public class DotNotationPaths {
         DotNotationPaths.useCache = useCache;
         if (!useCache) {
             cached.clear();
+            cascadeCached.clear();
         }
     }
 
@@ -139,8 +142,17 @@ public class DotNotationPaths {
      */
     public static void setCacheDepth(int cacheDepth) {
         if (cacheDepthConfigured.compareAndSet(false, true)) {
-            DotNotationPaths.cacheDepth = Math.max(MIN_CACHE_DEPTH, cacheDepth);
+            setCacheDepthInternal(cacheDepth);
         }
+    }
+
+    /**
+     * Sets the cache depth, only for internal use.
+     *
+     * @param cacheDepth the cache depth
+     */
+    static void setCacheDepthInternal(int cacheDepth) {
+        DotNotationPaths.cacheDepth = Math.max(MIN_CACHE_DEPTH, cacheDepth);
     }
 
     private static class RootDotNotationPath implements DotNotationPath {
@@ -152,12 +164,9 @@ public class DotNotationPaths {
 
         @Override
         public DotNotationPath resolve(Object key) {
-            return new DefaultDotNotationPath(key.toString());
-        }
-
-        @Override
-        public DotNotationPath resolve(int index) {
-            return new DefaultDotNotationPath(String.valueOf(index));
+            var path = key.toString();
+            return useCache ? cached.computeIfAbsent(path, k -> new CachedDotNotationPath(k, 1))
+                    : new DefaultDotNotationPath(key.toString());
         }
 
         @Override
@@ -185,10 +194,6 @@ public class DotNotationPaths {
     @SuppressWarnings("ClassCanBeRecord")
     private static class CachedDotNotationPath implements DotNotationPath {
 
-        private static CachedDotNotationPath create(String path, int depth) {
-            return cached.computeIfAbsent(path, k -> new CachedDotNotationPath(k, depth));
-        }
-
         private final String path;
         private final int depth;
 
@@ -199,8 +204,9 @@ public class DotNotationPaths {
 
         @Override
         public DotNotationPath resolve(Object key) {
-            if (depth > cacheDepth) {
-                return create(path(key.toString()), depth + 1);
+            if (depth < cacheDepth) {
+                return cascadeCached.computeIfAbsent(this, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(key.toString(), k -> new CachedDotNotationPath(path(k), depth + 1));
             }
             return new DefaultDotNotationPath(path, key.toString());
         }
@@ -218,6 +224,17 @@ public class DotNotationPaths {
         @Override
         public String toString() {
             return "CachedDotNotationPath(path=" + getPath() + ", depth=" + depth + ")";
+        }
+
+        @Override
+        public int hashCode() {
+            return path.hashCode() ^ Integer.hashCode(depth);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this == obj ||
+                    (obj instanceof CachedDotNotationPath other && path.equals(other.path) && depth == other.depth);
         }
 
     }
