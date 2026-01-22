@@ -1,4 +1,4 @@
-package com.github.fmjsjx.bson.model3.core;
+package com.github.fmjsjx.bson.model3.core.util;
 
 import com.github.fmjsjx.libcommon.util.DateTimeUtil;
 import org.bson.*;

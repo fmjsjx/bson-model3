@@ -1,4 +1,5 @@
-package com.github.fmjsjx.bson.model3.core;
+package com.github.fmjsjx.bson.model3.core.util;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;

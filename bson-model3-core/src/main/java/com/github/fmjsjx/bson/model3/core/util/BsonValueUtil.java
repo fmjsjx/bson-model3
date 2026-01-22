@@ -1,4 +1,4 @@
-package com.github.fmjsjx.bson.model3.core;
+package com.github.fmjsjx.bson.model3.core.util;
 
 import org.bson.BsonDateTime;
 import org.bson.BsonTimestamp;
@@ -21,92 +21,92 @@ public class BsonValueUtil {
      * Converts the specified {@link BsonDateTime} to
      * {@link LocalDateTime} in the default time-zone.
      *
-     * @param bson the {@link BsonDateTime} to be converted
+     * @param bsonDateTime the {@link BsonDateTime} to be converted
      * @return the converted {@link LocalDateTime}
      */
-    public static LocalDateTime toLocalDateTime(BsonDateTime bson) {
-        return toLocalDateTime(bson, ZoneId.systemDefault());
+    public static LocalDateTime toLocalDateTime(BsonDateTime bsonDateTime) {
+        return toLocalDateTime(bsonDateTime, ZoneId.systemDefault());
     }
 
     /**
      * Converts the specified {@link BsonDateTime} to
      * {@link LocalDateTime} in the specified time-zone given.
      *
-     * @param bson the {@link BsonDateTime} to be converted
+     * @param bsonDateTime the {@link BsonDateTime} to be converted
      * @param zone the time-zone
      * @return the converted {@link LocalDateTime}
      */
-    public static LocalDateTime toLocalDateTime(BsonDateTime bson, ZoneId zone) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(bson.getValue()), zone);
+    public static LocalDateTime toLocalDateTime(BsonDateTime bsonDateTime, ZoneId zone) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(bsonDateTime.getValue()), zone);
     }
 
     /**
      * Converts the specified {@link BsonTimestamp} to
      * {@link LocalDateTime} in the default time-zone.
      *
-     * @param bson the {@link BsonTimestamp} to be converted
+     * @param bsonTimestamp the {@link BsonTimestamp} to be converted
      * @return the converted {@link LocalDateTime}
      */
-    public static LocalDateTime toLocalDateTime(BsonTimestamp bson) {
-        return toLocalDateTime(bson, ZoneId.systemDefault());
+    public static LocalDateTime toLocalDateTime(BsonTimestamp bsonTimestamp) {
+        return toLocalDateTime(bsonTimestamp, ZoneId.systemDefault());
     }
 
     /**
      * Converts the specified {@link BsonTimestamp} to
      * {@link LocalDateTime} in the specified time-zone given.
      *
-     * @param bson the {@link BsonTimestamp} to be converted
+     * @param bsonTimestamp the {@link BsonTimestamp} to be converted
      * @param zone the time-zone
      * @return the converted {@link LocalDateTime}
      */
-    public static LocalDateTime toLocalDateTime(BsonTimestamp bson, ZoneId zone) {
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(bson.getTime()), zone);
+    public static LocalDateTime toLocalDateTime(BsonTimestamp bsonTimestamp, ZoneId zone) {
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(bsonTimestamp.getTime()), zone);
     }
 
     /**
      * Converts the specified {@link BsonDateTime} to
      * {@link ZonedDateTime} in the default time-zone.
      *
-     * @param bson the {@link BsonDateTime} to be converted
+     * @param bsonDateTime the {@link BsonDateTime} to be converted
      * @return the converted {@link ZonedDateTime}
      */
-    public static ZonedDateTime toZonedDateTime(BsonDateTime bson) {
-        return toZonedDateTime(bson, ZoneId.systemDefault());
+    public static ZonedDateTime toZonedDateTime(BsonDateTime bsonDateTime) {
+        return toZonedDateTime(bsonDateTime, ZoneId.systemDefault());
     }
 
     /**
      * Converts the specified {@link BsonDateTime} to
      * {@link ZonedDateTime} in the specified time-zone given.
      *
-     * @param bson the {@link BsonDateTime} to be converted
+     * @param bsonDateTime the {@link BsonDateTime} to be converted
      * @param zone the time-zone
      * @return the converted {@link ZonedDateTime}
      */
-    public static ZonedDateTime toZonedDateTime(BsonDateTime bson, ZoneId zone) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(bson.getValue()), zone);
+    public static ZonedDateTime toZonedDateTime(BsonDateTime bsonDateTime, ZoneId zone) {
+        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(bsonDateTime.getValue()), zone);
     }
 
     /**
      * Converts the specified {@link BsonTimestamp} to
      * {@link ZonedDateTime} in the default time-zone.
      *
-     * @param bson the {@link BsonTimestamp} to be converted
+     * @param bsonTimestamp the {@link BsonTimestamp} to be converted
      * @return the converted {@link ZonedDateTime}
      */
-    public static ZonedDateTime toZonedDateTime(BsonTimestamp bson) {
-        return toZonedDateTime(bson, ZoneId.systemDefault());
+    public static ZonedDateTime toZonedDateTime(BsonTimestamp bsonTimestamp) {
+        return toZonedDateTime(bsonTimestamp, ZoneId.systemDefault());
     }
 
     /**
      * Converts the specified {@link BsonTimestamp} to
      * {@link ZonedDateTime} in the specified time-zone given.
      *
-     * @param bson the {@link BsonTimestamp} to be converted
+     * @param bsonTimestamp the {@link BsonTimestamp} to be converted
      * @param zone the time-zone
      * @return the converted {@link ZonedDateTime}
      */
-    public static ZonedDateTime toZonedDateTime(BsonTimestamp bson, ZoneId zone) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochSecond(bson.getTime()), zone);
+    public static ZonedDateTime toZonedDateTime(BsonTimestamp bsonTimestamp, ZoneId zone) {
+        return ZonedDateTime.ofInstant(Instant.ofEpochSecond(bsonTimestamp.getTime()), zone);
     }
 
     private BsonValueUtil() {

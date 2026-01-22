@@ -1,4 +1,5 @@
-package com.github.fmjsjx.bson.model3.core;
+package com.github.fmjsjx.bson.model3.core.util;
+
 import org.bson.BsonDateTime;
 import org.bson.BsonTimestamp;
 import org.junit.jupiter.api.Test;
