@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @param <T>    the type of the {@link BsonValue} which the model
  *               mapping with
- * @param <Self> the type of the implementation
+ * @param <Self> the type of the subclass
  * @author MJ Fang
  * @since 3.0
  */
@@ -37,7 +37,7 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
      * @param <P> the type of the parent model
      * @return the parent model of this model, may be {@code null}
      */
-    @Nullable <P extends BsonModel<?, ?>> P parent();
+    <P extends BsonModel<?, ?>> @Nullable P parent();
 
     /**
      * Returns the dot notation path of this model.
