@@ -17,8 +17,9 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
     protected @Nullable BsonModel<?, ?> parent;
     protected int index = -1;
     protected @Nullable Object key;
-
     protected @Nullable DotNotationPath cachedPath;
+    protected boolean fullUpdate;
+    protected boolean changeNotified;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -139,5 +140,104 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
             }
         };
     }
+
+    @Override
+    public Self reset() {
+        return resetChildren().resetStates();
+    }
+
+    /**
+     * Resets the states of this model.
+     *
+     * @return this model
+     */
+    @SuppressWarnings("unchecked")
+    protected Self resetStates() {
+        fullUpdate = false;
+        changeNotified = false;
+        return (Self) this;
+    }
+
+    /**
+     * Resets children models of this model.
+     *
+     * @return this model
+     */
+    @SuppressWarnings("unchecked")
+    protected Self resetChildren() {
+        return (Self) this;
+    }
+
+    /**
+     * Returns whether this model is in full update mode or not.
+     *
+     * @return {@code true} if this model is in full update mode,
+     * {@code false} otherwise
+     */
+    protected boolean isFullUpdate() {
+        return fullUpdate;
+    }
+
+    /**
+     * Sets whether this model is in full update mode or not.
+     *
+     * @param fullUpdate {@code true} if this model is in full update
+     *                   mode, {@code false} otherwise
+     * @return this model
+     */
+    @SuppressWarnings("unchecked")
+    protected Self fullUpdate(boolean fullUpdate) {
+        if (fullUpdate != isFullUpdate()) {
+            this.fullUpdate = fullUpdate;
+        }
+        return (Self) this;
+    }
+
+    /**
+     * Sets this model to full update mode.
+     *
+     * @return this model
+     */
+    protected Self fullUpdate() {
+        return fullUpdate(true);
+    }
+
+    /**
+     * Triggers change notification.
+     *
+     * @return this model
+     */
+    @SuppressWarnings("unchecked")
+    protected Self triggerChange() {
+        if (!changeNotified) {
+            notifyChange();
+            changeNotified = true;
+        }
+        return (Self) this;
+    }
+
+    /**
+     * Notifies change to the parent model.
+     */
+    protected void notifyChange() {
+        if (parent() instanceof AbstractBsonModel<?, ?> parentModel) {
+            parentModel.onChildChanged(index, key);
+        }
+    }
+
+    /**
+     * Called when a child model is just changed.
+     *
+     * @param index the index
+     * @param key   the key, may be {@code null}
+     */
+    protected abstract void onChildChanged(int index, @Nullable Object key);
+
+    /**
+     * Cleans this model.
+     *
+     * @return this model
+     */
+    protected abstract Self clean();
 
 }
