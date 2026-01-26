@@ -168,6 +168,20 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         return (Self) this;
     }
 
+    @Override
+    public boolean anyDeleted() {
+        return deletedSize() > 0;
+    }
+
+    /**
+     * Returns the number of deleted values in this model within the
+     * current context.
+     *
+     * @return the number of deleted values in this model within the
+     * current context
+     */
+    protected abstract int deletedSize();
+
     /**
      * Returns whether this model is in full update mode or not.
      *
