@@ -183,6 +183,14 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     }
 
     @Override
+    protected DotNotationPath resolveChild(int index, @Nullable Object key) {
+        if (index < 0) {
+            throw new IllegalStateException("attached without index");
+        }
+        return path().resolve(index);
+    }
+
+    @Override
     protected Self resetStates() {
         var changedIndices = this.changedIndices;
         if (!changedIndices.isEmpty()) {

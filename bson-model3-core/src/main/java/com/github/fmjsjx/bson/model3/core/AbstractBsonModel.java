@@ -125,23 +125,23 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         BsonModel<?, ?> parent = parent();
         return switch (parent) {
             case null -> DotNotationPaths.root();
-
-            case ListModel<?, ?> listModel -> {
-                var index = this.index;
-                if (index < 0) {
-                    throw new IllegalStateException("attached parent without index");
-                }
-                yield listModel.path().resolve(index);
-            }
-
-            default -> {
-                var key = this.key;
-                if (key == null) {
-                    throw new IllegalStateException("attached parent without key");
-                }
-                yield parent.path().resolve(key);
-            }
+            case AbstractBsonModel<?, ?> parentModel -> parentModel.resolveChild(index, key);
+            default -> throw new IllegalStateException("Unsupported model type: " + parent.getClass().getName());
         };
+    }
+
+    /**
+     * Resolves the path of the child model.
+     *
+     * @param index the index
+     * @param key   the key, may be {@code null}
+     * @return the resolved dot notation path
+     */
+    protected DotNotationPath resolveChild(int index, @Nullable Object key) {
+        if (key == null) {
+            throw new IllegalStateException("attached without key");
+        }
+        return path().resolve(key);
     }
 
     @Override
