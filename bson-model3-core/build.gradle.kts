@@ -4,19 +4,18 @@ plugins {
 }
 
 dependencies {
-    compileOnlyApi("org.jspecify:jspecify")
+
+    api("org.jspecify:jspecify")
 
     implementation("org.slf4j:slf4j-api")
 
     api("com.github.fmjsjx:libcommon-collection")
     api("com.github.fmjsjx:libcommon-util")
-    compileOnlyApi("com.github.fmjsjx:libcommon-json-jackson2")
-    compileOnlyApi("com.github.fmjsjx:libcommon-json-jackson3")
-    compileOnlyApi("com.github.fmjsjx:libcommon-json-fastjson2")
-    compileOnlyApi("com.github.fmjsjx:libcommon-json-jsoniter")
+    api("com.github.fmjsjx:libcommon-json-fastjson2")
+    api("com.github.fmjsjx:libcommon-json-jsoniter")
 
     api("org.mongodb:bson")
-    compileOnly("org.mongodb:mongodb-driver-core")
+    implementation("org.mongodb:mongodb-driver-core")
     compileOnly("org.mongodb:mongodb-driver-sync")
     compileOnly("org.mongodb:mongodb-driver-reactivestreams")
 
