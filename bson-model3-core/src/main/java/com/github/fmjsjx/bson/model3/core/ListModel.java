@@ -16,7 +16,7 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
  * @author MJ Fang
  * @since 3.0
  */
-public interface ListModel<E extends @Nullable Object, Self extends ListModel<E, Self>>
+public interface ListModel<E, Self extends ListModel<E, Self>>
         extends ContainerModel<BsonArray, Self> {
 
     @Override

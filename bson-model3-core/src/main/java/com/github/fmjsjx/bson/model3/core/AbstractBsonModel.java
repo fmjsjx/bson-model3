@@ -1,7 +1,10 @@
 package com.github.fmjsjx.bson.model3.core;
 
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.jspecify.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * The basic abstract implementation of {@link BsonModel}.
@@ -253,5 +256,13 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @return this model
      */
     protected abstract Self clean();
+
+    /**
+     * Appends the updates of this model to the specified list given.
+     *
+     * @param updates the list of updates
+     * @return the number of updates added to the list
+     */
+    protected abstract int appendUpdates(List<Bson> updates);
 
 }
