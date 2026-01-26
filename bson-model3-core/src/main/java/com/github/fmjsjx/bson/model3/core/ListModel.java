@@ -12,12 +12,12 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
  * The interface for all BSON list models.
  *
  * @param <E>    the type of the elements in this list
- * @param <Self> the type of the subclass
+ * @param <Self> the type of the superclass
  * @author MJ Fang
  * @since 3.0
  */
-public interface BsonListModel<E extends BsonModel<?, ?>, Self extends BsonListModel<E, Self>>
-        extends BsonContainerModel<BsonArray, Self> {
+public interface ListModel<E extends @Nullable Object, Self extends ListModel<E, Self>>
+        extends ContainerModel<BsonArray, Self> {
 
     @Override
     default Self loadStoreData(Object data) {

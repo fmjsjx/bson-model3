@@ -7,11 +7,11 @@ import org.bson.BsonValue;
  *
  * @param <T>    the type of the {@link BsonValue} which the model
  *               mapping with
- * @param <Self> the type of the subclass
+ * @param <Self> the type of the superclass
  * @author MJ Fang
  * @since 3.0
  */
-public interface BsonContainerModel<T extends BsonValue, Self extends BsonContainerModel<T, Self>>
+public interface ContainerModel<T extends BsonValue, Self extends ContainerModel<T, Self>>
         extends BsonModel<T, Self> {
 
     /**

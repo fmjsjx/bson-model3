@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
  * The basic abstract implementation of {@link BsonModel}.
  *
  * @param <T>    the type of {@link BsonValue}
- * @param <Self> the type of subclass
+ * @param <Self> the type of superclass
  * @author MJ Fang
  * @since 3.0
  */
@@ -123,7 +123,7 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         return switch (parent) {
             case null -> DotNotationPaths.root();
 
-            case BsonListModel<?, ?> listModel -> {
+            case ListModel<?, ?> listModel -> {
                 var index = this.index;
                 if (index < 0) {
                     throw new IllegalStateException("attached parent without index");
