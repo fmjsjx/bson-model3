@@ -25,6 +25,22 @@ public class CommonsUtil {
         return value == null ? Optional.empty() : Optional.of(value);
     }
 
+    /**
+     * Calculate the initial capacity of a map.
+     *
+     * @param expectedSize the expected size of the map
+     * @return the calculated initial capacity of the map
+     */
+    public static int mapCapacity(int expectedSize) {
+        if (expectedSize < 3) {
+            return expectedSize + 1;
+        }
+        if (expectedSize < Integer.MAX_VALUE / 2 + 1) {
+            return 1 + (int) (expectedSize / 0.75);
+        }
+        return Integer.MAX_VALUE;
+    }
+
     private CommonsUtil() {
     }
 

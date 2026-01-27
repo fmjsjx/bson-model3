@@ -26,11 +26,13 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     /**
      * Constructs a new {@link AbstractListModel} with the specified
      * {@code elements} given.
+     * <p>
+     * For internal use only.
      *
      * @param elements the {@link List} contains elements
      * @param copy     {@code true} if the elements should be copied
      */
-    protected AbstractListModel(List<@Nullable E> elements, boolean copy) {
+    AbstractListModel(List<@Nullable E> elements, boolean copy) {
         this.elements = copy ? new ArrayList<>(elements) : elements;
     }
 
@@ -70,7 +72,11 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
         clean();
         var elements = this.elements;
         for (var v : src) {
-            elements.add(v.isNull() ? null : decodeElement(v));
+            if (v.isNull()) {
+                elements.add(null);
+            } else {
+                appendElement(decodeElement(v));
+            }
         }
         return (Self) this;
     }
@@ -83,13 +89,38 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
      */
     protected abstract E decodeElement(BsonValue value);
 
+    @Override
+    public List<? extends @Nullable Object> toStoreData() {
+        var elements = this.elements;
+        if (elements.isEmpty()) {
+            return List.of();
+        }
+        var list = new ArrayList<>(elements.size());
+        for (var element : elements) {
+            list.add(element == null ? null : encodeStoreElement(element));
+        }
+        return list;
+    }
+
+    /**
+     * Encodes the specified element to store data.
+     *
+     * @param element the element
+     * @return the encoded store data
+     */
+    protected abstract Object encodeStoreElement(E element);
+
     @SuppressWarnings("unchecked")
     @Override
     public Self loadStoreData(List<?> list) {
         clean();
         var elements = this.elements;
         for (var v : list) {
-            elements.add(v == null ? null : decodeStoreElement(v));
+            if (v == null) {
+                elements.add(null);
+            } else {
+                appendElement(decodeStoreElement(v));
+            }
         }
         return (Self) this;
     }
@@ -159,8 +190,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     @Override
     public Self append(E element) {
         var index = elements.size();
-        appendElement(element);
-        return triggerChange(index);
+        return appendElement(element).triggerChange(index);
     }
 
     /**
@@ -168,8 +198,10 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
      *
      * @param element the element to append
      */
-    protected void appendElement(E element) {
+    @SuppressWarnings("unchecked")
+    protected Self appendElement(E element) {
         elements.add(element);
+        return (Self) this;
     }
 
     @Override
