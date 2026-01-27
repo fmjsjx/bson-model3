@@ -13,7 +13,7 @@ import java.util.*;
  * The abstract base class for all BSON list models.
  *
  * @param <E>    the type of the elements in this list
- * @param <Self> the type of the superclass
+ * @param <Self> the type of the super class
  * @author MJ Fang
  * @since 3.0
  */
@@ -114,10 +114,9 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
 
     @Override
     public @Nullable E set(int index, @Nullable E element) {
-        if (element == null) {
-            return remove(index);
-        }
-        E original = setElement(index, element);
+        E original = element == null
+                ? removeElement(index)
+                : setElement(index, element);
         if (original != element) {
             triggerChange(index);
         }
@@ -145,15 +144,6 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
      */
     protected @Nullable E setElement(int index, E element) {
         return elements.set(index, element);
-    }
-
-    @Override
-    public @Nullable E remove(int index) {
-        E original = removeElement(index);
-        if (original != null) {
-            triggerChange(index);
-        }
-        return original;
     }
 
     /**

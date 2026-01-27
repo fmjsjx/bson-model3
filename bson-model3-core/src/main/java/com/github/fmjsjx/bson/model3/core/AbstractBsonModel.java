@@ -10,7 +10,7 @@ import java.util.List;
  * The basic abstract implementation of {@link BsonModel}.
  *
  * @param <T>    the type of {@link BsonValue}
- * @param <Self> the type of superclass
+ * @param <Self> the type of super class
  * @author MJ Fang
  * @since 3.0
  */

@@ -12,7 +12,7 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
  * The interface for all BSON list models.
  *
  * @param <E>    the type of the elements in this list
- * @param <Self> the type of the superclass
+ * @param <Self> the type of the super class
  * @author MJ Fang
  * @since 3.0
  */
@@ -102,7 +102,9 @@ public interface ListModel<E, Self extends ListModel<E, Self>>
      * @return the element previously at the specified position, may be
      * {@code null}
      */
-    @Nullable E remove(int index);
+    default @Nullable E remove(int index) {
+        return set(index, null);
+    }
 
     /**
      * Appends the specified element to the end of this list.

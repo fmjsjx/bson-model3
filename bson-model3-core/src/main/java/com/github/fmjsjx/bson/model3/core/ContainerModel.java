@@ -7,7 +7,7 @@ import org.bson.BsonValue;
  *
  * @param <T>    the type of the {@link BsonValue} which the model
  *               mapping with
- * @param <Self> the type of the superclass
+ * @param <Self> the type of the super class
  * @author MJ Fang
  * @since 3.0
  */
