@@ -14,6 +14,7 @@ import org.bson.BsonValue;
  * @see SingleValues.BigDecimalValue
  * @see SingleValues.StringValue
  * @see SingleValues.LocalDateTimeValue
+ * @see SingleValues.ZonedDateTimeValue
  * @since 3.0
  */
 public sealed interface SingleValue<T> permits
@@ -22,7 +23,8 @@ public sealed interface SingleValue<T> permits
         SingleValues.DoubleValue,
         SingleValues.BigDecimalValue,
         SingleValues.StringValue,
-        SingleValues.LocalDateTimeValue {
+        SingleValues.LocalDateTimeValue,
+        SingleValues.ZonedDateTimeValue {
 
     /**
      * Returns the class of the single value.

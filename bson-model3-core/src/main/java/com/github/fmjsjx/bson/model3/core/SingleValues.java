@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 /**
  * Constants of {@link SingleValue}s.
@@ -44,6 +45,11 @@ public class SingleValues {
      * The constant {@link SingleValue} for {@link LocalDateTime}.
      */
     public static final SingleValue<LocalDateTime> LOCAL_DATE_TIME = LocalDateTimeValue.INSTANCE;
+
+    /**
+     * The constant {@link SingleValue} for {@link ZonedDateTime}.
+     */
+    public static final SingleValue<ZonedDateTime> ZONED_DATE_TIME = ZonedDateTimeValue.INSTANCE;
 
     static final class IntegerValue implements SingleValue<Integer> {
 
@@ -273,20 +279,57 @@ public class SingleValues {
 
         @Override
         public LocalDateTime decodeStoreData(Object value) {
-            var epochMilli = switch (value) {
-                case Long l -> l;
-                case Number n -> n.longValue();
-                default -> {
-                    try {
-                        yield Long.parseLong(value.toString());
-                    } catch (NumberFormatException e) {
-                        yield 0L;
-                    }
-                }
-            };
-            return DateTimeUtil.ofEpochMilli(epochMilli);
+            return DateTimeUtil.ofEpochMilli(toEpochMilli(value));
         }
 
+    }
+
+    static final class ZonedDateTimeValue implements SingleValue<ZonedDateTime> {
+
+        private static final ZonedDateTimeValue INSTANCE = new ZonedDateTimeValue();
+
+        private ZonedDateTimeValue() {
+        }
+
+        @Override
+        public Class<ZonedDateTime> getType() {
+            return ZonedDateTime.class;
+        }
+
+        @Override
+        public ZonedDateTime parse(BsonValue value) {
+            return BsonValueUtil.toZonedDateTime(value.asDateTime());
+        }
+
+        @Override
+        public BsonValue toBsonValue(ZonedDateTime value) {
+            return new BsonDateTime(encodeStoreData(value));
+        }
+
+        @Override
+        public Long encodeStoreData(ZonedDateTime value) {
+            return value.toInstant().toEpochMilli();
+        }
+
+        @Override
+        public ZonedDateTime decodeStoreData(Object value) {
+            return DateTimeUtil.ofEpochMilli(toEpochMilli(value), ZoneId.systemDefault());
+        }
+
+    }
+
+    private static long toEpochMilli(Object value) {
+        return switch (value) {
+            case Long l -> l;
+            case Number n -> n.longValue();
+            default -> {
+                try {
+                    yield Long.parseLong(value.toString());
+                } catch (NumberFormatException e) {
+                    yield 0L;
+                }
+            }
+        };
     }
 
     private SingleValues() {
