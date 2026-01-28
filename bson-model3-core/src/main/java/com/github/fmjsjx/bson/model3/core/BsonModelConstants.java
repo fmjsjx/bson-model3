@@ -14,6 +14,11 @@ public class BsonModelConstants {
      */
     public static final ZoneId UTC = DateTimeUtil.zone();
 
+    /**
+     * The constant value of {@code DELETED}.
+     */
+    public static final Integer DELETED_VALUE = 1;
+
     private BsonModelConstants() {
     }
 

@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
+import static com.github.fmjsjx.bson.model3.core.BsonModelConstants.DELETED_VALUE;
+
 /**
  * The abstract base class for all BSON list models.
  *
@@ -21,6 +23,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
         extends AbstractBsonModel<BsonArray, Self> implements ListModel<E, Self> {
 
     protected final List<@Nullable E> elements;
+    protected final List<@Nullable E> values;
     protected final IntSet changedIndices = new IntHashSet();
 
     /**
@@ -34,6 +37,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
      */
     AbstractListModel(List<@Nullable E> elements, boolean copy) {
         this.elements = copy ? new ArrayList<>(elements) : elements;
+        this.values = Collections.unmodifiableList(this.elements);
     }
 
     /**
@@ -135,7 +139,12 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
 
     @Override
     public List<@Nullable E> values() {
-        return Collections.unmodifiableList(elements);
+        return values;
+    }
+
+    @Override
+    public Iterator<@Nullable E> iterator() {
+        return values.iterator();
     }
 
     @Override
@@ -158,7 +167,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
      * Triggers the change at the specified index.
      *
      * @param index the index
-     * @return this
+     * @return this model
      */
     protected Self triggerChange(int index) {
         changedIndices.add(index);
@@ -268,6 +277,9 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
 
     @Override
     public boolean anyDeleted() {
+        if (isFullUpdate()) {
+            return false;
+        }
         var changedIndices = this.changedIndices;
         if (changedIndices.isEmpty()) {
             return false;
@@ -283,6 +295,9 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
 
     @Override
     protected int deletedSize() {
+        if (isFullUpdate()) {
+            return 0;
+        }
         var changedIndices = this.changedIndices;
         if (changedIndices.isEmpty()) {
             return 0;
@@ -300,6 +315,9 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     @Override
     public List<?> toDisplayData() {
         var elements = this.elements;
+        if (elements.isEmpty()) {
+            return List.of();
+        }
         var displayData = new ArrayList<>(elements.size());
         for (var element : elements) {
             displayData.add(element == null ? null : toDisplayElement(element));
@@ -308,7 +326,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     }
 
     /**
-     * Converts the specified element to display data.
+     * Converts the specified element to a display data.
      *
      * @param element the element to convert
      * @return the display data
@@ -326,22 +344,25 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
         for (var index : changedIndices) {
             E element = elements.get(index);
             if (element != null) {
-                data.put(index, toUpdateElement(element));
+                data.put(index, toUpdatedElement(element));
             }
         }
-        return data;
+        return data.isEmpty() ? null : data;
     }
 
     /**
-     * Converts the specified element to update data.
+     * Converts the specified element to an update data.
      *
      * @param element the element to convert
      * @return the update data
      */
-    protected abstract Object toUpdateElement(E element);
+    protected abstract Object toUpdatedElement(E element);
 
     @Override
     public @Nullable Map<? extends Object, ? extends Object> toDeleted() {
+        if (isFullUpdate()) {
+            return null;
+        }
         var changedIndices = this.changedIndices;
         if (changedIndices.isEmpty()) {
             return null;
@@ -351,7 +372,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
         for (var index : changedIndices) {
             E element = elements.get(index);
             if (element == null) {
-                data.put(index, 1);
+                data.put(index, DELETED_VALUE);
             }
         }
         return data.isEmpty() ? null : data;
@@ -359,7 +380,8 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(elements=" + elements + ")";
+        return getClass().getSimpleName() + "(size=" + size() + ", changedIndices=" + changedIndices +
+                ", elements=" + elements + ")";
     }
 
 }

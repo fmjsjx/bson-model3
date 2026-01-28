@@ -1,16 +1,15 @@
 package com.github.fmjsjx.bson.model3.core;
 
+import com.github.fmjsjx.libcommon.collection.ListSet;
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.jspecify.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static com.github.fmjsjx.bson.model3.core.BsonModelConstants.DELETED_VALUE;
 import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.mapCapacity;
 
 public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V, Self>>
@@ -100,9 +99,11 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         }
         var bsonDocument = new BsonDocument(mapCapacity(mappings.size()));
         for (var entry : mappings.entrySet()) {
-            K key = entry.getKey();
             V value = entry.getValue();
-            bsonDocument.put(mapKey(key), value == null ? BsonNull.VALUE : encodeValue(value));
+            if (value != null) {
+                K key = entry.getKey();
+                bsonDocument.put(mapKey(key), encodeValue(value));
+            }
         }
         return bsonDocument;
     }
@@ -119,14 +120,11 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     @Override
     public Self load(BsonDocument src) {
         clean();
-        var mappings = this.mappings;
         for (var entry : src.entrySet()) {
             K key = parseKey(entry.getKey());
             var value = entry.getValue();
-            if (value.isNull()) {
-                mappings.put(key, null);
-            } else {
-                putValue(key, decodeValue(value));
+            if (!value.isNull()) {
+                putMapping(key, decodeValue(value));
             }
         }
         return (Self) this;
@@ -145,12 +143,11 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
      *
      * @param key   the key
      * @param value the value
-     * @return this {@code MapModel}
+     * @return the previous value associated with the specified key, or
+     * {@code null} if there was no mapping for the key
      */
-    @SuppressWarnings("unchecked")
-    protected Self putValue(K key, V value) {
-        mappings.put(key, value);
-        return (Self) this;
+    protected @Nullable V putMapping(K key, V value) {
+        return mappings.put(key, value);
     }
 
     @Override
@@ -163,7 +160,9 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         for (var entry : mappings.entrySet()) {
             var key = encodeStoreKey(entry.getKey());
             V v = entry.getValue();
-            map.put(key, v == null ? null : encodeStoreValue(v));
+            if (v != null) {
+                map.put(key, encodeStoreValue(v));
+            }
         }
         return map;
     }
@@ -188,14 +187,11 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     @Override
     public Self loadStoreData(Map<?, ?> map) {
         clean();
-        var mappings = this.mappings;
         for (var entry : map.entrySet()) {
             K key = decodeStoreKey(entry.getKey());
             var v = entry.getValue();
-            if (v == null) {
-                mappings.put(key, null);
-            } else {
-                putValue(key, decodeStoreValue(v));
+            if (v != null) {
+                putMapping(key, decodeStoreValue(v));
             }
         }
         return (Self) this;
@@ -217,5 +213,263 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
      */
     protected abstract V decodeStoreValue(Object value);
 
+    @Override
+    public boolean containsKey(K key) {
+        return mappings.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(V value) {
+        return mappings.containsValue(value);
+    }
+
+    @Override
+    public @Nullable V get(K key) {
+        return mappings.get(key);
+    }
+
+    @Override
+    public @Nullable V put(K key, @Nullable V value) {
+        V original = value == null
+                ? removeMapping(key)
+                : putMapping(key, value);
+        if (original != value) {
+            triggerChange(key);
+        }
+        return original;
+    }
+
+    /**
+     * Triggers the change event for the specified key.
+     *
+     * @param key the key
+     * @return this model
+     */
+    protected Self triggerChange(K key) {
+        changedKeys.add(key);
+        return triggerChange();
+    }
+
+    /**
+     * Removes the mapping for the specified key from this map if present.
+     *
+     * @param key the key
+     * @return the previous value associated with the specified key, or
+     * {@code null} if there was no mapping for the key
+     */
+    protected @Nullable V removeMapping(K key) {
+        return mappings.remove(key);
+    }
+
+    @Override
+    public @Nullable V remove(K key) {
+        return put(key, null);
+    }
+
+    @Override
+    public Set<K> keys() {
+        var mappings = this.mappings;
+        if (mappings.isEmpty()) {
+            return Set.of();
+        }
+        return ListSet.copyOf(mappings.keySet());
+    }
+
+    @Override
+    public List<@Nullable V> values() {
+        var mappings = this.mappings;
+        if (mappings.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(mappings.values());
+    }
+
+    @Override
+    public List<Map.Entry<K, V>> entries() {
+        var mappings = this.mappings;
+        if (mappings.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(mappings.entrySet());
+    }
+
+    @Override
+    public void forEach(BiConsumer<? super K, ? super @Nullable V> action) {
+        this.mappings.forEach(action);
+    }
+
+    @Override
+    protected Self resetStates() {
+        var changedKeys = this.changedKeys;
+        if (!changedKeys.isEmpty()) {
+            changedKeys.clear();
+        }
+        return super.resetStates();
+    }
+
+    @Override
+    public Self clear() {
+        changedKeys.clear();
+        return fullUpdate(true).clearMappings().triggerChange();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Self clearMappings() {
+        mappings.clear();
+        return (Self) this;
+    }
+
+    @Override
+    protected Self clean() {
+        return clearMappings().resetStates();
+    }
+
+    @Override
+    public boolean anyChanged() {
+        return isFullUpdate() || !changedKeys.isEmpty();
+    }
+
+    @Override
+    public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return false;
+        }
+        var mappings = this.mappings;
+        for (var key : changedKeys) {
+            if (mappings.containsKey(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean anyDeleted() {
+        if (isFullUpdate()) {
+            return false;
+        }
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return false;
+        }
+        var mappings = this.mappings;
+        for (var key : changedKeys) {
+            if (!mappings.containsKey(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected int deletedSize() {
+        if (isFullUpdate()) {
+            return 0;
+        }
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return 0;
+        }
+        var mappings = this.mappings;
+        var count = 0;
+        for (var key : changedKeys) {
+            if (!mappings.containsKey(key)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public Map<?, ?> toDisplayData() {
+        var mappings = this.mappings;
+        if (mappings.isEmpty()) {
+            return Map.of();
+        }
+        var displayData = new LinkedHashMap<>(mapCapacity(mappings.size()));
+        for (var entry : mappings.entrySet()) {
+            V value = entry.getValue();
+            if (value != null) {
+                displayData.put(entry.getKey(), toDisplayValue(value));
+            }
+        }
+        return displayData;
+    }
+
+    /**
+     * Converts the specified value to a display data.
+     *
+     * @param value the value
+     * @return the display data
+     */
+    protected abstract Object toDisplayValue(V value);
+
+    @Override
+    public @Nullable Map<?, ?> toUpdated() {
+        if (isFullUpdate()) {
+            return toDisplayData();
+        }
+        return toUpdatedMappings();
+    }
+
+    /**
+     * Creates and returns a {@link Map} of updated mappings within the
+     * current context.
+     *
+     * @return a {@link Map} of updated mappings, or {@code null} if
+     * there are no updates
+     */
+    protected @Nullable Map<? extends Object, ? extends Object> toUpdatedMappings() {
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return null;
+        }
+        var data = new LinkedHashMap<>();
+        var mappings = this.mappings;
+        for (var key : changedKeys) {
+            V value = mappings.get(key);
+            if (value != null) {
+                data.put(key, toUpdatedValue(value));
+            }
+        }
+        return data.isEmpty() ? null : data;
+    }
+
+    /**
+     * Converts the specified value to an updated data.
+     *
+     * @param value the value
+     * @return the updated data
+     */
+    protected abstract Object toUpdatedValue(V value);
+
+    @Override
+    public @Nullable Map<? extends Object, ? extends Object> toDeleted() {
+        if (isFullUpdate()) {
+            return null;
+        }
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return null;
+        }
+        var data = new LinkedHashMap<>();
+        var mappings = this.mappings;
+        for (var key : changedKeys) {
+            if (mappings.containsKey(key)) {
+                data.put(key, DELETED_VALUE);
+            }
+        }
+        return data.isEmpty() ? null : data;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(size=" + size() + ", changedKeys=" + changedKeys +
+                ", mappings=" + mappings + ")";
+    }
 
 }

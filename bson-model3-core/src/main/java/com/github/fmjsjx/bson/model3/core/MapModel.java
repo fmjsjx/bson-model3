@@ -136,9 +136,9 @@ public interface MapModel<K, V, Self extends MapModel<K, V, Self>>
     /**
      * Returns a {@link Set} view of the keys contained in this map.
      * <p>
-     * Unlike {@link Map#keySet()}, the returned {@link Set} is not
-     * backed by this map, so changes to this map are not reflected in
-     * the set, and vice versa.
+     * Unlike {@link Map#keySet()}, the returned {@link Set} is just a
+     * copy of the keys contained in this map, so changes to this map are
+     * not reflected in the set, and vice versa.
      *
      * @return a {@link Set} view of the keys contained in this map
      */
@@ -147,9 +147,9 @@ public interface MapModel<K, V, Self extends MapModel<K, V, Self>>
     /**
      * Returns a {@link List} view of the values contained in this map.
      * <p>
-     * Unlike {@link Map#values()}, the returned {@link List} is not
-     * backed by this map, so changes to this map are not reflected in
-     * the list, and vice versa.
+     * Unlike {@link Map#values()}, the returned {@link List} is just a
+     * copy of the values contained in this map, so changes to this map
+     * are not reflected in the list, and vice versa.
      *
      * @return a {@link List} view of the values contained in this map
      */
@@ -158,9 +158,9 @@ public interface MapModel<K, V, Self extends MapModel<K, V, Self>>
     /**
      * Returns a {@link List} view of the mappings contained in this map.
      * <p>
-     * Unlike {@link Map#entrySet()}, the returned {@link List} is not
-     * backed by this map, so changes to this map are not reflected in
-     * the set, and vice versa.
+     * Unlike {@link Map#entrySet()}, the returned {@link List} is just a
+     * copy of the mappings contained in this map, so changes to this map are
+     * not reflected in the list, and vice versa.
      *
      * @return a {@link List} view of the mappings contained in this map
      */

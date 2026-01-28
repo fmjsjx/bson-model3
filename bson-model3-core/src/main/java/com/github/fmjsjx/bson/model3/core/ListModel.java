@@ -3,8 +3,10 @@ package com.github.fmjsjx.bson.model3.core;
 import org.bson.BsonArray;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
 
@@ -17,7 +19,7 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
  * @since 3.0
  */
 public interface ListModel<E, Self extends ListModel<E, Self>>
-        extends ContainerModel<BsonArray, Self> {
+        extends ContainerModel<BsonArray, Self>, Iterable<@Nullable E> {
 
     @Override
     default Self loadStoreData(Object data) {
@@ -44,6 +46,28 @@ public interface ListModel<E, Self extends ListModel<E, Self>>
      * @return an unmodifiable list of the values in this model
      */
     List<@Nullable E> values();
+
+    @Override
+    default Iterator<@Nullable E> iterator() {
+        return values().iterator();
+    }
+
+    /**
+     * Returns the first element in this list that matches the given predicate,
+     * or {@code null} if no such element is found.
+     *
+     * @param filter the predicate to match
+     * @return the first element in this list that matches the given predicate,
+     * or {@code null} if no such element is found
+     */
+    default @Nullable E firstOrNull(Predicate<? super E> filter) {
+        for (var e : values()) {
+            if (e != null && filter.test(e)) {
+                return e;
+            }
+        }
+        return null;
+    }
 
     /**
      * Returns the element at the specified position in this list.
@@ -113,5 +137,13 @@ public interface ListModel<E, Self extends ListModel<E, Self>>
      * @return this model
      */
     Self append(E element);
+
+    /**
+     * Returns {@code true} if this list contains the specified element.
+     *
+     * @param element element whose presence in this list is to be tested
+     * @return {@code true} if this list contains the specified element
+     */
+    boolean contains(E element);
 
 }
