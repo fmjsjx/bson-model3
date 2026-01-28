@@ -134,9 +134,9 @@ public class BsonUtil {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
             case BsonDecimal128 decimal128 -> Optional.of(decimal128.getValue().bigDecimalValue());
-            case BsonDouble bsonDouble -> Optional.of(BigDecimal.valueOf(bsonDouble.getValue()));
             case BsonInt32 bsonInt32 -> Optional.of(BigDecimal.valueOf(bsonInt32.getValue()));
             case BsonInt64 bsonInt64 -> Optional.of(BigDecimal.valueOf(bsonInt64.getValue()));
+            case BsonDouble bsonDouble -> Optional.of(BigDecimal.valueOf(bsonDouble.getValue()));
             default -> throw new BsonInvalidOperationException(
                     "Value expected to be of type NUMBER is of unexpected type " + value.getBsonType());
         };
