@@ -1,6 +1,9 @@
 package com.github.fmjsjx.bson.model3.core;
 
 import org.bson.BsonDocument;
+import org.jspecify.annotations.Nullable;
+
+import java.util.Map;
 
 /**
  * The interface for all BSON object models.
@@ -10,5 +13,14 @@ import org.bson.BsonDocument;
  * @since 3.0
  */
 public interface ObjectModel<Self extends ObjectModel<Self>> extends BsonModel<BsonDocument, Self> {
+
+    @Override
+    Map<String, ? extends Object> toDisplayData();
+
+    @Override
+    @Nullable Map<String, ? extends Object> toUpdated();
+
+    @Override
+    @Nullable Map<String, ? extends Object> toDeleted();
 
 }
