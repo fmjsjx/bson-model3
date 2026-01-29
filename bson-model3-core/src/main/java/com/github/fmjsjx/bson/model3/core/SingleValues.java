@@ -12,44 +12,75 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 /**
- * Constants of {@link SingleValue}s.
+ * Helper class for {@link SingleValue}s.
+ *
+ * @author MJ Fang
+ * @since 3.0
  */
 public class SingleValues {
 
     /**
-     * The constant {@link SingleValue} for {@link Integer}.
+     * Returns the {@link SingleValue} for {@link Integer}.
+     *
+     * @return the {@link SingleValue} for {@link Integer}
      */
-    public static final SingleValue<Integer> INTEGER = IntegerValue.INSTANCE;
+    public static SingleValue<Integer> integer() {
+        return IntegerValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link Long}.
+     * Returns the {@link SingleValue} for {@link Long}.
+     *
+     * @return the {@link SingleValue} for {@link Long}
      */
-    public static final SingleValue<Long> LONG = LongValue.INSTANCE;
+    public static SingleValue<Long> longValue() {
+        return LongValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link Double}.
+     * Returns the {@link SingleValue} for {@link Double}.
+     *
+     * @return the {@link SingleValue} for {@link Double}
      */
-    public static final SingleValue<Double> DOUBLE = DoubleValue.INSTANCE;
+    public static SingleValue<Double> doubleValue() {
+        return DoubleValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link BigDecimal}.
+     * Returns the {@link SingleValue} for {@link BigDecimal}.
+     *
+     * @return the {@link SingleValue} for {@link BigDecimal}
      */
-    public static final SingleValue<BigDecimal> BIG_DECIMAL = BigDecimalValue.INSTANCE;
+    public static SingleValue<BigDecimal> bigDecimal() {
+        return BigDecimalValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link String}.
+     * Returns the {@link SingleValue} for {@link String}.
+     *
+     * @return the {@link SingleValue} for {@link String}
      */
-    public static final SingleValue<String> STRING = StringValue.INSTANCE;
+    public static SingleValue<String> string() {
+        return StringValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link LocalDateTime}.
+     * Returns the {@link SingleValue} for {@link LocalDateTime}.
+     *
+     * @return the {@link SingleValue} for {@link LocalDateTime}
      */
-    public static final SingleValue<LocalDateTime> LOCAL_DATE_TIME = LocalDateTimeValue.INSTANCE;
+    public static SingleValue<LocalDateTime> localDateTime() {
+        return LocalDateTimeValue.INSTANCE;
+    }
 
     /**
-     * The constant {@link SingleValue} for {@link ZonedDateTime}.
+     * Returns the {@link SingleValue} for {@link ZonedDateTime}.
+     *
+     * @return the {@link SingleValue} for {@link ZonedDateTime}
      */
-    public static final SingleValue<ZonedDateTime> ZONED_DATE_TIME = ZonedDateTimeValue.INSTANCE;
+    public static SingleValue<ZonedDateTime> zonedDateTime() {
+        return ZonedDateTimeValue.INSTANCE;
+    }
 
     static final class IntegerValue implements SingleValue<Integer> {
 

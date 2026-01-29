@@ -16,7 +16,7 @@ public class SingleValuesTests {
 
     @Test
     void testInteger() {
-        var value = SingleValues.INTEGER;
+        var value = SingleValues.integer();
         assertEquals(Integer.class, value.getType());
 
         assertEquals(new BsonInt32(123), value.toBsonValue(123));
@@ -36,7 +36,7 @@ public class SingleValuesTests {
 
     @Test
     void testLong() {
-        var value = SingleValues.LONG;
+        var value = SingleValues.longValue();
         assertEquals(Long.class, value.getType());
 
         assertEquals(new BsonInt64(123L), value.toBsonValue(123L));
@@ -56,7 +56,7 @@ public class SingleValuesTests {
 
     @Test
     void testDouble() {
-        var value = SingleValues.DOUBLE;
+        var value = SingleValues.doubleValue();
         assertEquals(Double.class, value.getType());
 
         assertEquals(new BsonDouble(123.45), value.toBsonValue(123.45));
@@ -76,7 +76,7 @@ public class SingleValuesTests {
 
     @Test
     void testBigDecimal() {
-        var value = SingleValues.BIG_DECIMAL;
+        var value = SingleValues.bigDecimal();
         assertEquals(BigDecimal.class, value.getType());
 
         var bd = new BigDecimal("123.45");
@@ -100,7 +100,7 @@ public class SingleValuesTests {
 
     @Test
     void testString() {
-        var value = SingleValues.STRING;
+        var value = SingleValues.string();
         assertEquals(String.class, value.getType());
 
         assertEquals(new BsonString("abc"), value.toBsonValue("abc"));
@@ -113,7 +113,7 @@ public class SingleValuesTests {
 
     @Test
     void testLocalDateTime() {
-        var value = SingleValues.LOCAL_DATE_TIME;
+        var value = SingleValues.localDateTime();
         assertEquals(LocalDateTime.class, value.getType());
 
         var now = LocalDateTime.now().withNano(0);
@@ -129,7 +129,7 @@ public class SingleValuesTests {
 
     @Test
     void testZonedDateTime() {
-        var value = SingleValues.ZONED_DATE_TIME;
+        var value = SingleValues.zonedDateTime();
         assertEquals(ZonedDateTime.class, value.getType());
 
         var now = ZonedDateTime.now().withNano(0);
