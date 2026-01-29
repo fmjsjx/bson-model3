@@ -1,7 +1,10 @@
 package com.github.fmjsjx.bson.model3.core;
 
 import com.github.fmjsjx.libcommon.util.SystemPropertyUtil;
+import org.jspecify.annotations.Nullable;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,7 +37,6 @@ public class DotNotationPaths {
     private static final AtomicBoolean cacheDepthConfigured = new AtomicBoolean();
 
     private static final ConcurrentMap<String, CachedDotNotationPath> cached = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<CachedDotNotationPath, ConcurrentHashMap<String, DotNotationPath>> cascadeCached = new ConcurrentHashMap<>();
 
     /**
      * Returns the singleton instance of {@link DotNotationPath} which
@@ -119,7 +121,6 @@ public class DotNotationPaths {
         DotNotationPaths.useCache = useCache;
         if (!useCache) {
             cached.clear();
-            cascadeCached.clear();
         }
     }
 
@@ -191,24 +192,56 @@ public class DotNotationPaths {
 
     }
 
-    @SuppressWarnings("ClassCanBeRecord")
     private static class CachedDotNotationPath implements DotNotationPath {
+
+        private static final VarHandle CASCADE_CACHED_VH;
+
+        static {
+            try {
+                CASCADE_CACHED_VH = MethodHandles.lookup()
+                        .findVarHandle(CachedDotNotationPath.class, "cascadeCached", ConcurrentHashMap.class);
+            } catch (ReflectiveOperationException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
 
         private final String path;
         private final int depth;
+
+        // Always use CASCADE_CACHED_VH to access this field
+        @SuppressWarnings("unused")
+        private @Nullable ConcurrentHashMap<String, CachedDotNotationPath> cascadeCached;
 
         private CachedDotNotationPath(String path, int depth) {
             this.path = path;
             this.depth = depth;
         }
 
+        @SuppressWarnings("unchecked")
+        private ConcurrentHashMap<String, CachedDotNotationPath> getCascadeCached() {
+            var cascadeCached = CASCADE_CACHED_VH.get(this);
+            if (cascadeCached == null) {
+                cascadeCached = CASCADE_CACHED_VH.getAcquire(this);
+                if (cascadeCached == null) {
+                    cascadeCached = new ConcurrentHashMap<>();
+                    if (!CASCADE_CACHED_VH.compareAndSet(this, null, cascadeCached)) {
+                        cascadeCached = CASCADE_CACHED_VH.getAcquire(this);
+                    }
+                }
+            }
+            return (ConcurrentHashMap<String, CachedDotNotationPath>) cascadeCached;
+        }
+
         @Override
         public DotNotationPath resolve(Object key) {
             if (depth < cacheDepth) {
-                return cascadeCached.computeIfAbsent(this, k -> new ConcurrentHashMap<>())
-                        .computeIfAbsent(key.toString(), k -> new CachedDotNotationPath(path(k), depth + 1));
+                return getCascadeCached().computeIfAbsent(key.toString(), this::createResolvedPath);
             }
             return new DefaultDotNotationPath(path, key.toString());
+        }
+
+        private CachedDotNotationPath createResolvedPath(String key) {
+            return new CachedDotNotationPath(path(key), depth + 1);
         }
 
         @Override
