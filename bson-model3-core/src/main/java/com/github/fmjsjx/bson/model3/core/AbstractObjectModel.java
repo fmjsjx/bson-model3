@@ -11,6 +11,13 @@ import java.util.Map;
 
 import static com.mongodb.client.model.Updates.set;
 
+/**
+ * The abstract base class of all BSON object models.
+ *
+ * @param <Self> the type of the super class
+ * @author MJ Fang
+ * @since 3.0
+ */
 public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>>
         extends AbstractBsonModel<BsonDocument, Self> implements ObjectModel<Self> {
 

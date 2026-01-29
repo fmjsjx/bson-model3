@@ -15,6 +15,15 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.mapCapacity;
 import static com.mongodb.client.model.Updates.set;
 import static com.mongodb.client.model.Updates.unset;
 
+/**
+ * The abstract base class for all BSON map models.
+ *
+ * @param <K>    the key type
+ * @param <V>    the value type
+ * @param <Self> the type of the super class
+ * @author MJ Fang
+ * @since 3.0
+ */
 public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V, Self>>
         extends AbstractBsonModel<BsonDocument, Self> implements MapModel<K, V, Self> {
 
