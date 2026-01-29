@@ -3,6 +3,7 @@ package com.github.fmjsjx.bson.model3.core;
 import com.github.fmjsjx.libcommon.collection.ListSet;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
@@ -11,6 +12,8 @@ import java.util.function.Function;
 
 import static com.github.fmjsjx.bson.model3.core.BsonModelConstants.DELETED_VALUE;
 import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.mapCapacity;
+import static com.mongodb.client.model.Updates.set;
+import static com.mongodb.client.model.Updates.unset;
 
 public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V, Self>>
         extends AbstractBsonModel<BsonDocument, Self> implements MapModel<K, V, Self> {
@@ -27,7 +30,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
      * @param keyParser the function parses keys from {@link String}s
      */
     protected AbstractMapModel(Function<? super String, ? extends K> keyParser) {
-        this(keyParser, K::toString);
+        this(keyParser, Object::toString);
     }
 
     /**
@@ -158,7 +161,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         }
         var map = new LinkedHashMap<>(mapCapacity(mappings.size()));
         for (var entry : mappings.entrySet()) {
-            var key = encodeStoreKey(entry.getKey());
+            var key = mapKey(entry.getKey());
             V v = entry.getValue();
             if (v != null) {
                 map.put(key, encodeStoreValue(v));
@@ -166,14 +169,6 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         }
         return map;
     }
-
-    /**
-     * Encodes the specified key to a store key.
-     *
-     * @param key the key
-     * @return the encoded store key
-     */
-    protected abstract Object encodeStoreKey(K key);
 
     /**
      * Encodes the specified value to a store value.
@@ -188,7 +183,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     public Self loadStoreData(Map<?, ?> map) {
         clean();
         for (var entry : map.entrySet()) {
-            K key = decodeStoreKey(entry.getKey());
+            K key = parseKey(entry.getKey().toString());
             var v = entry.getValue();
             if (v != null) {
                 putMapping(key, decodeStoreValue(v));
@@ -196,14 +191,6 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         }
         return (Self) this;
     }
-
-    /**
-     * Decodes the specified store key to a key.
-     *
-     * @param key the store key
-     * @return the decoded key
-     */
-    protected abstract K decodeStoreKey(Object key);
 
     /**
      * Decodes the specified store value to a value.
@@ -317,6 +304,14 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     protected Self clearMappings() {
         mappings.clear();
         return (Self) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void onChildChanged(int index, @Nullable Object key) {
+        if (key != null) {
+            triggerChange((K) key);
+        }
     }
 
     @Override
@@ -459,11 +454,35 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         var data = new LinkedHashMap<>();
         var mappings = this.mappings;
         for (var key : changedKeys) {
-            if (mappings.containsKey(key)) {
+            if (!mappings.containsKey(key)) {
                 data.put(key, DELETED_VALUE);
             }
         }
         return data.isEmpty() ? null : data;
+    }
+
+    @Override
+    protected int appendUpdates(List<Bson> updates) {
+        if (isFullUpdate()) {
+            updates.add(set(path().getPath(), toBsonValue()));
+            return 1;
+        }
+        var changedKeys = this.changedKeys;
+        if (changedKeys.isEmpty()) {
+            return 0;
+        }
+        var originalSize = updates.size();
+        var path = path();
+        var mappings = this.mappings;
+        for (var key : changedKeys) {
+            V value = mappings.get(key);
+            var subPath = path.path(mapKey(key));
+            var update = value == null
+                    ? unset(subPath)
+                    : set(subPath, encodeValue(value));
+            updates.add(update);
+        }
+        return updates.size() - originalSize;
     }
 
     @Override
