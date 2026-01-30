@@ -11,8 +11,10 @@ dependencies {
 
     api("com.github.fmjsjx:libcommon-collection")
     api("com.github.fmjsjx:libcommon-util")
-    api("com.github.fmjsjx:libcommon-json-fastjson2")
-    api("com.github.fmjsjx:libcommon-json-jsoniter")
+    api("com.github.fmjsjx:libcommon-json")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-fastjson2")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-jackson3")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-jsoniter")
 
     api("org.mongodb:bson")
     implementation("org.mongodb:mongodb-driver-core")
@@ -23,6 +25,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl")
+    testImplementation("com.github.fmjsjx:libcommon-json-fastjson2")
+    testImplementation("com.github.fmjsjx:libcommon-json-jsoniter")
 
 }
 

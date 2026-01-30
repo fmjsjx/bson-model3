@@ -1,5 +1,6 @@
 package com.github.fmjsjx.bson.model3.core;
 
+import com.github.fmjsjx.libcommon.json.JsonLibrary;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.Nullable;
 
@@ -48,6 +49,33 @@ public abstract class AbstractRootModel<Self extends AbstractRootModel<Self>>
         appendUpdates(updates);
         return updates;
     }
+
+    @Override
+    public String jsonMarshal(JsonLibrary<?> jsonLibrary) {
+        return jsonLibrary.dumpsToString(toStoreData());
+    }
+
+    @Override
+    public byte[] jsonMarshalToBytes(JsonLibrary<?> jsonLibrary) {
+        return jsonLibrary.dumpsToBytes(toStoreData());
+    }
+
+    @Override
+    public Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, String json) {
+        return loadStoreData(jsonLibrary.loads(json, storeDataType()));
+    }
+
+    @Override
+    public Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, byte[] json) {
+        return loadStoreData(jsonLibrary.loads(json, storeDataType()));
+    }
+
+    /**
+     * Returns the type of the store data of this model.
+     *
+     * @return the type of the store data of this model
+     */
+    protected abstract Class<? extends Object> storeDataType();
 
     @SuppressWarnings("unchecked")
     @Override
