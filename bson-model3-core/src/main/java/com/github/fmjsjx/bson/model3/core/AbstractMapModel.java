@@ -437,7 +437,10 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         for (var key : changedKeys) {
             V value = mappings.get(key);
             if (value != null) {
-                data.put(key, toUpdatedValue(value));
+                var updateValue = toUpdatedValue(value);
+                if (updateValue != null) {
+                    data.put(key, updateValue);
+                }
             }
         }
         return data.isEmpty() ? null : data;
@@ -449,7 +452,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
      * @param value the value
      * @return the updated data
      */
-    protected abstract Object toUpdatedValue(V value);
+    protected abstract @Nullable Object toUpdatedValue(V value);
 
     @Override
     public @Nullable Map<? extends Object, ? extends Object> toDeleted() {
@@ -463,11 +466,30 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
         var data = new LinkedHashMap<>();
         var mappings = this.mappings;
         for (var key : changedKeys) {
+            V value = mappings.get(key);
+            if (value == null) {
+                data.put(key, DELETED_VALUE);
+            } else {
+                var subDeleted = toDeletedValue(value);
+                if (subDeleted != null) {
+                    data.put(key, subDeleted);
+                }
+            }
             if (!mappings.containsKey(key)) {
                 data.put(key, DELETED_VALUE);
             }
         }
         return data.isEmpty() ? null : data;
+    }
+
+    /**
+     * Converts the specified value to a deleted data.
+     *
+     * @param value the value
+     * @return the deleted data
+     */
+    protected @Nullable Object toDeletedValue(V value) {
+        return null;
     }
 
     @Override
