@@ -14,6 +14,15 @@ import java.util.Map;
  */
 public interface ObjectModel<Self extends ObjectModel<Self>> extends BsonModel<BsonDocument, Self> {
 
+    /**
+     * Returns whether the field at the specified index is changed.
+     *
+     * @param index the index of the field
+     * @return {@code true} if the field at the specified index is
+     * changed, otherwise {@code false}
+     */
+    boolean fieldChanged(int index);
+
     @Override
     Map<String, ? extends Object> toDisplayData();
 

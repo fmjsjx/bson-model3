@@ -26,6 +26,11 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
      */
     protected final BitSet changedFields = new BitSet();
 
+    @Override
+    public boolean fieldChanged(int index) {
+        return changedFields.get(index);
+    }
+
     /**
      * Trigger the change event of the field at the given index.
      *
@@ -120,7 +125,7 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
      *
      * @param data the map to append the updated data
      */
-    protected abstract void appendUpdatedData(Map<String, ? extends Object> data);
+    protected abstract void appendUpdatedData(Map<String, ? super Object> data);
 
     @Override
     public @Nullable Map<String, ? extends Object> toDeleted() {
@@ -138,6 +143,8 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
      *
      * @param data the map to append the deleted data
      */
-    protected abstract void appendDeletedData(Map<String, ? extends Object> data);
+    protected void appendDeletedData(Map<String, ? super Object> data) {
+        // do nothing as default
+    }
 
 }

@@ -47,21 +47,6 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
     DotNotationPath path();
 
     /**
-     * Converts this model to store data.
-     *
-     * @return the store data
-     */
-    Object toStoreData();
-
-    /**
-     * Loads data from the specified store data to this model.
-     *
-     * @param data the store data
-     * @return this model
-     */
-    Self loadStoreData(Object data);
-
-    /**
      * Converts this model to display data.
      * <p>
      * The type of the returned object may be Map or List.

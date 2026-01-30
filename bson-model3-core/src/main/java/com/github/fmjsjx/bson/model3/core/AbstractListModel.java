@@ -94,7 +94,15 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     protected abstract E decodeElement(BsonValue value);
 
     @Override
-    public List<? extends @Nullable Object> toStoreData() {
+    protected Self loadStoreData(Object data) {
+        if (data instanceof List<?> list) {
+            return loadStoreData(list);
+        }
+        throw new IllegalArgumentException("data expected to be a java.util.List but was " + data.getClass().getName());
+    }
+
+    @Override
+    protected List<? extends @Nullable Object> toStoreData() {
         var elements = this.elements;
         if (elements.isEmpty()) {
             return List.of();

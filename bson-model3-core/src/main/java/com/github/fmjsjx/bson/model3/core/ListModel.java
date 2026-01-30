@@ -20,15 +20,6 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
  */
 public interface ListModel<E, Self extends ListModel<E, Self>>
         extends ContainerModel<BsonArray, Self>, Iterable<@Nullable E> {
-
-    @Override
-    default Self loadStoreData(Object data) {
-        if (data instanceof List<?> list) {
-            return loadStoreData(list);
-        }
-        throw new IllegalArgumentException("data expected to be a java.util.List but was " + data.getClass().getName());
-    }
-
     /**
      * Loads data from the specified {@code list} to this model.
      *

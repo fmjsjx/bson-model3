@@ -163,7 +163,15 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    public Map<?, ? extends @Nullable Object> toStoreData() {
+    protected Self loadStoreData(Object data) {
+        if (data instanceof Map<?, ?> map) {
+            return loadStoreData(map);
+        }
+        throw new IllegalArgumentException("data expected to be a java.util.Map but was " + data.getClass().getName());
+    }
+
+    @Override
+    protected Map<?, ? extends @Nullable Object> toStoreData() {
         var mappings = this.mappings;
         if (mappings.isEmpty()) {
             return Map.of();

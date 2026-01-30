@@ -24,14 +24,6 @@ import static com.github.fmjsjx.bson.model3.core.util.CommonsUtil.safeOptional;
 public interface MapModel<K, V, Self extends MapModel<K, V, Self>>
         extends ContainerModel<BsonDocument, Self> {
 
-    @Override
-    default Self loadStoreData(Object data) {
-        if (data instanceof Map<?, ?> map) {
-            return loadStoreData(map);
-        }
-        throw new IllegalArgumentException("data expected to be a java.util.Map but was " + data.getClass().getName());
-    }
-
     /**
      * Loads data from the specified {@code map} to this model.
      *
