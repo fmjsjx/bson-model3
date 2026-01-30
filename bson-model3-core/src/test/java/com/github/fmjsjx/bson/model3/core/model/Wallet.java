@@ -1,7 +1,7 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
+import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
-import com.github.fmjsjx.bson.model3.core.*;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @NullMarked
-public final class Wallet extends AbstractObjectModel<Wallet> implements ObjectModel<Wallet> {
+public final class Wallet extends AbstractObjectModel<Wallet> {
 
     public static final String STORE_NAME_COIN_TOTAL = "ct";
     public static final String STORE_NAME_COIN_CONSUMED = "cc";
@@ -190,6 +190,28 @@ public final class Wallet extends AbstractObjectModel<Wallet> implements ObjectM
     }
 
     @Override
+    protected Object toStoreData() {
+        var _storeData = new WalletStoreData();
+        _storeData.coinTotal = getCoinTotal();
+        _storeData.coinConsumed = getCoinConsumed();
+        _storeData.diamondTotal = getDiamondTotal();
+        _storeData.diamondConsumed = getDiamondConsumed();
+        return _storeData;
+    }
+
+    @Override
+    protected Wallet loadStoreData(Object data) {
+        resetStates();
+        if (data instanceof WalletStoreData _storeData) {
+            coinTotal = _storeData.coinTotal;
+            coinConsumed = _storeData.coinConsumed;
+            diamondTotal = _storeData.diamondTotal;
+            diamondConsumed = _storeData.diamondConsumed;
+        }
+        return this;
+    }
+
+    @Override
     public @Nullable Map<String, ?> toDeleted() {
         return null;
     }
@@ -221,27 +243,6 @@ public final class Wallet extends AbstractObjectModel<Wallet> implements ObjectM
         coinConsumed = BsonUtil.longValue(src, STORE_NAME_COIN_CONSUMED).orElse(0);
         diamondTotal = BsonUtil.longValue(src, STORE_NAME_DIAMOND_TOTAL).orElse(0);
         diamondConsumed = BsonUtil.longValue(src, STORE_NAME_DIAMOND_CONSUMED).orElse(0);
-        return this;
-    }
-
-    @Override
-    protected Object toStoreData() {
-        var _storeData = new WalletStoreData();
-        _storeData.coinTotal = getCoinTotal();
-        _storeData.coinConsumed = getCoinConsumed();
-        _storeData.diamondTotal = getDiamondTotal();
-        _storeData.diamondConsumed = getDiamondConsumed();
-        return _storeData;
-    }
-
-    @Override
-    protected Wallet loadStoreData(Object data) {
-        if (data instanceof WalletStoreData _storeData) {
-            coinTotal = _storeData.coinTotal;
-            coinConsumed = _storeData.coinConsumed;
-            diamondTotal = _storeData.diamondTotal;
-            diamondConsumed = _storeData.diamondConsumed;
-        }
         return this;
     }
 
