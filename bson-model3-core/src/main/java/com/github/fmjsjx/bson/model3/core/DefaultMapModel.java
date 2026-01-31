@@ -205,7 +205,7 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
     }
 
     @Override
-    protected int appendUpdates(List<Bson> updates) {
+    public int appendUpdates(List<Bson> updates) {
         if (isFullUpdate()) {
             updates.add(set(path().getPath(), toBsonValue()));
             return 1;
@@ -231,15 +231,18 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
 
     @Override
     public DefaultMapModel<K, V> deepCopy() {
-        var copy = new DefaultMapModel<K, V>(keyParser, valueFactory);
-        var mappings = this.mappings;
+        return new DefaultMapModel<K, V>(keyParser, valueFactory).deepCopyFrom(this);
+    }
+
+    @Override
+    public DefaultMapModel<K, V> deepCopyFrom(DefaultMapModel<K, V> src) {
+        var mappings = src.mappings;
         for (var entry : mappings.entrySet()) {
             V value = entry.getValue();
             if (value != null) {
-                copy.putMapping(entry.getKey(), value.deepCopy());
+                putMapping(entry.getKey(), value.deepCopy());
             }
         }
-        return copy;
+        return this;
     }
-
 }

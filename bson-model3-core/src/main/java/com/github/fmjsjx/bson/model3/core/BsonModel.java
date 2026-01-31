@@ -115,4 +115,12 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
      */
     Self deepCopy();
 
+    /**
+     * Deep copy values from the specified model.
+     *
+     * @param src the source model
+     * @return this model
+     */
+    Self deepCopyFrom(Self src);
+
 }

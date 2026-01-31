@@ -86,9 +86,13 @@ public final class SingleValueMapModel<K, V> extends AbstractMapModel<K, V, Sing
 
     @Override
     public SingleValueMapModel<K, V> deepCopy() {
-        var copy = new SingleValueMapModel<K, V>(keyParser, valueHandler);
-        copy.mappings.putAll(mappings);
-        return copy;
+        return new SingleValueMapModel<K, V>(keyParser, valueHandler).deepCopyFrom(this);
+    }
+
+    @Override
+    public SingleValueMapModel<K, V> deepCopyFrom(SingleValueMapModel<K, V> src) {
+        mappings.putAll(src.mappings);
+        return this;
     }
 
 }

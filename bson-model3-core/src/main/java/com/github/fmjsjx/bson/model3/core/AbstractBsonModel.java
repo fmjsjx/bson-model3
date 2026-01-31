@@ -37,7 +37,7 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @return this model
      */
     @SuppressWarnings("unchecked")
-    protected Self parent(BsonModel<?, ?> parent) {
+    public Self parent(BsonModel<?, ?> parent) {
         this.parent = parent;
         return (Self) this;
     }
@@ -49,7 +49,7 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @return this model
      */
     @SuppressWarnings("unchecked")
-    protected Self index(int index) {
+    public Self index(int index) {
         this.index = index;
         return (Self) this;
     }
@@ -61,7 +61,7 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @return this model
      */
     @SuppressWarnings("unchecked")
-    protected Self key(Object key) {
+    public Self key(Object key) {
         this.key = key;
         return (Self) this;
     }
@@ -270,7 +270,7 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      *
      * @return this model
      */
-    protected abstract Self clean();
+    public abstract Self clean();
 
     /**
      * Appends the updates of this model to the specified list given.
@@ -278,6 +278,6 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @param updates the list of updates
      * @return the number of updates added to the list
      */
-    protected abstract int appendUpdates(List<Bson> updates);
+    public abstract int appendUpdates(List<Bson> updates);
 
 }

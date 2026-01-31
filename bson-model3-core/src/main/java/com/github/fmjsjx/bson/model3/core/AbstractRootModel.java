@@ -34,7 +34,7 @@ public abstract class AbstractRootModel<Self extends AbstractRootModel<Self>>
      */
     @SuppressWarnings("unchecked")
     @Override
-    protected Self parent(BsonModel<?, ?> parent) {
+    public Self parent(BsonModel<?, ?> parent) {
         return (Self) this;
     }
 

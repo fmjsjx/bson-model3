@@ -28,7 +28,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     public static final int FIELD_INDEX_DIAMOND_TOTAL = 4;
     public static final int FIELD_INDEX_DIAMOND_CONSUMED = 5;
 
-    static final class WalletStoreData {
+    protected static final class WalletStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_COIN_TOTAL)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_COIN_TOTAL)
@@ -47,7 +47,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_DIAMOND_CONSUMED)
         private long diamondConsumed;
 
-        WalletStoreData() {
+        protected WalletStoreData() {
         }
 
         public long getCoinTotal() {
@@ -190,7 +190,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    protected Object toStoreData() {
+    protected WalletStoreData toStoreData() {
         var _storeData = new WalletStoreData();
         _storeData.coinTotal = getCoinTotal();
         _storeData.coinConsumed = getCoinConsumed();
@@ -258,6 +258,9 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
 
     @Override
     public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
         var changedFields = this.changedFields;
         if (changedFields.isEmpty()) {
             return false;
@@ -279,12 +282,16 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
 
     @Override
     public Wallet deepCopy() {
-        var _copy = new Wallet();
-        _copy.coinTotal = getCoinTotal();
-        _copy.coinConsumed = getCoinConsumed();
-        _copy.diamondTotal = getDiamondTotal();
-        _copy.diamondConsumed = getDiamondConsumed();
-        return _copy;
+        return new Wallet().deepCopyFrom(this);
+    }
+
+    @Override
+    public Wallet deepCopyFrom(Wallet src) {
+        coinTotal = src.getCoinTotal();
+        coinConsumed = src.getCoinConsumed();
+        diamondTotal = src.getDiamondTotal();
+        diamondConsumed = src.getDiamondConsumed();
+        return this;
     }
 
     @Override

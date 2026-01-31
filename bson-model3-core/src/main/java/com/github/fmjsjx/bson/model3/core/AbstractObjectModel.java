@@ -68,7 +68,7 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
     }
 
     @Override
-    protected Self clean() {
+    public Self clean() {
         return cleanFields().resetStates();
     }
 
@@ -85,7 +85,7 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
     }
 
     @Override
-    protected int appendUpdates(List<Bson> updates) {
+    public int appendUpdates(List<Bson> updates) {
         if (isFullUpdate()) {
             updates.add(set(path().getPath(), toBsonValue()));
             return 1;

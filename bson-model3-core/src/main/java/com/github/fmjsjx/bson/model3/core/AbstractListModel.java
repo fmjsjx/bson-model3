@@ -256,7 +256,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     }
 
     @Override
-    protected Self clean() {
+    public Self clean() {
         return clearElements().resetStates();
     }
 

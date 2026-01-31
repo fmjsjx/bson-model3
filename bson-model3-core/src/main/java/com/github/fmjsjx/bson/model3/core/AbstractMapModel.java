@@ -332,7 +332,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    protected Self clean() {
+    public Self clean() {
         return clearMappings().resetStates();
     }
 
@@ -501,7 +501,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    protected int appendUpdates(List<Bson> updates) {
+    public int appendUpdates(List<Bson> updates) {
         if (isFullUpdate()) {
             updates.add(set(path().getPath(), toBsonValue()));
             return 1;

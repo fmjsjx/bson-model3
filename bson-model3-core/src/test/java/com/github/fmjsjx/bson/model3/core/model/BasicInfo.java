@@ -33,7 +33,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     public static final int FIELD_INDEX_CREATED_TIME = 3;
     public static final int FIELD_INDEX_CREATED_AT = 4;
 
-    static final class BasicInfoStoreData {
+    protected static final class BasicInfoStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_NAME)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_NAME)
@@ -55,7 +55,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_CREATED_TIME)
         private long createdTime;
 
-        BasicInfoStoreData() {
+        protected BasicInfoStoreData() {
         }
 
         public String getName() {
@@ -211,7 +211,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
-    protected Object toStoreData() {
+    protected BasicInfoStoreData toStoreData() {
         var _storeData = new BasicInfoStoreData();
         _storeData.name = getName();
         var _avatar = getAvatar();
@@ -331,6 +331,9 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
 
     @Override
     public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
         var changedFields = this.changedFields;
         if (changedFields.isEmpty()) {
             return false;
@@ -352,12 +355,16 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
 
     @Override
     public BasicInfo deepCopy() {
-        var _copy = new BasicInfo();
-        _copy.name = getName();
-        _copy.avatar = getAvatar();
-        _copy.birthday = getBirthday();
-        _copy.createdTime = getCreatedTime();
-        return _copy;
+        return new BasicInfo().deepCopyFrom(this);
+    }
+
+    @Override
+    public BasicInfo deepCopyFrom(BasicInfo src) {
+        name = src.getName();
+        avatar = src.getAvatar();
+        birthday = src.getBirthday();
+        createdTime = src.getCreatedTime();
+        return this;
     }
 
     @Override
