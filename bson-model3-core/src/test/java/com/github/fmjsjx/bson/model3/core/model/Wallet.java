@@ -1,5 +1,6 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
+import com.alibaba.fastjson2.annotation.JSONType;
 import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
 import com.mongodb.client.model.Updates;
@@ -28,6 +29,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     public static final int FIELD_INDEX_DIAMOND_TOTAL = 4;
     public static final int FIELD_INDEX_DIAMOND_CONSUMED = 5;
 
+    @JSONType(alphabetic = false)
     public static final class WalletStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_COIN_TOTAL)

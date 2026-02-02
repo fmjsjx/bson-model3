@@ -27,6 +27,7 @@ dependencies {
     testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl")
     testImplementation("com.github.fmjsjx:libcommon-json-fastjson2")
     testImplementation("com.github.fmjsjx:libcommon-json-jsoniter")
+    testImplementation("com.github.fmjsjx:libcommon-json-jackson3")
 
 }
 

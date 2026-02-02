@@ -1,5 +1,6 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
+import com.alibaba.fastjson2.annotation.JSONType;
 import com.github.fmjsjx.bson.model3.core.AbstractRootModel;
 import com.github.fmjsjx.bson.model3.core.DefaultMapModel;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
@@ -26,6 +27,7 @@ public final class Player extends AbstractRootModel<Player> {
     public static final int FIELD_INDEX_WALLET = 2;
     public static final int FIELD_INDEX_EQUIPMENTS = 3;
 
+    @JSONType(alphabetic = false)
     public static final class PlayerStoreData {
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_ID)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_ID)

@@ -1,5 +1,6 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
+import com.alibaba.fastjson2.annotation.JSONType;
 import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
 import com.github.fmjsjx.bson.model3.core.BsonModelConstants;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
@@ -33,6 +34,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     public static final int FIELD_INDEX_CREATED_TIME = 3;
     public static final int FIELD_INDEX_CREATED_AT = 4;
 
+    @JSONType(alphabetic = false)
     public static final class BasicInfoStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_NAME)
