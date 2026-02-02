@@ -56,6 +56,21 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
     Object toDisplayData();
 
     /**
+     * Converts this model to store data.
+     *
+     * @return the store data
+     */
+    Object toStoreData();
+
+    /**
+     * Loads data from the specified store data to this model.
+     *
+     * @param data the store data
+     * @return this model
+     */
+    Self loadStoreData(Object data);
+
+    /**
      * Reset states of this model.
      *
      * @return this model
@@ -91,6 +106,15 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
      * the current context, {@code false} otherwise
      */
     boolean anyDeleted();
+
+    /**
+     * Returns the number of deleted values in this model within the
+     * current context.
+     *
+     * @return the number of deleted values in this model within the
+     * current context
+     */
+    int deletedSize();
 
     /**
      * Creates and returns a {@link Map} of updated values within the

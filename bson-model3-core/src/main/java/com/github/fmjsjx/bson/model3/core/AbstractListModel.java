@@ -94,7 +94,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     protected abstract E decodeElement(BsonValue value);
 
     @Override
-    protected Self loadStoreData(Object data) {
+    public Self loadStoreData(Object data) {
         if (data instanceof List<?> list) {
             return loadStoreData(list);
         }
@@ -102,7 +102,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     }
 
     @Override
-    protected List<? extends @Nullable Object> toStoreData() {
+    public List<? extends @Nullable Object> toStoreData() {
         var elements = this.elements;
         if (elements.isEmpty()) {
             return List.of();
@@ -302,7 +302,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         if (isFullUpdate()) {
             return 0;
         }

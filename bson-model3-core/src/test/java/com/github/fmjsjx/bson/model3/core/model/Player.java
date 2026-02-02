@@ -1,6 +1,7 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
 import com.github.fmjsjx.bson.model3.core.AbstractRootModel;
+import com.github.fmjsjx.bson.model3.core.DefaultMapModel;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
@@ -18,12 +19,14 @@ public final class Player extends AbstractRootModel<Player> {
     public static final String STORE_NAME_ID = "_id";
     public static final String STORE_NAME_BASIC_INFO = "bi";
     public static final String STORE_NAME_WALLET = "w";
+    public static final String STORE_NAME_EQUIPMENTS = "e";
 
     public static final int FIELD_INDEX_ID = 0;
     public static final int FIELD_INDEX_BASIC_INFO = 1;
     public static final int FIELD_INDEX_WALLET = 2;
+    public static final int FIELD_INDEX_EQUIPMENTS = 3;
 
-    protected static final class PlayerStoreData {
+    public static final class PlayerStoreData {
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_ID)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_ID)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_ID)
@@ -36,9 +39,10 @@ public final class Player extends AbstractRootModel<Player> {
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_WALLET)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_WALLET)
         private Wallet.WalletStoreData wallet;
-
-        protected PlayerStoreData() {
-        }
+        @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_EQUIPMENTS)
+        @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_EQUIPMENTS)
+        @com.jsoniter.annotation.JsonProperty(value = STORE_NAME_EQUIPMENTS, implementation = LinkedHashMap.class)
+        private Map<String, Equipment.EquipmentStoreData> equipments;
 
         public long getId() {
             return id;
@@ -64,11 +68,20 @@ public final class Player extends AbstractRootModel<Player> {
             this.wallet = wallet;
         }
 
+        public Map<String, Equipment.EquipmentStoreData> getEquipments() {
+            return equipments;
+        }
+
+        public void setEquipments(Map<String, Equipment.EquipmentStoreData> equipments) {
+            this.equipments = equipments;
+        }
+
     }
 
     private long id;
     private final BasicInfo basicInfo = new BasicInfo().parent(this).index(FIELD_INDEX_BASIC_INFO).key(STORE_NAME_BASIC_INFO);
     private final Wallet wallet = new Wallet().parent(this).index(FIELD_INDEX_WALLET).key(STORE_NAME_WALLET);
+    private final DefaultMapModel<String, Equipment> equipments = DefaultMapModel.stringKeysMap(Equipment::new).parent(this).index(FIELD_INDEX_EQUIPMENTS).key(STORE_NAME_EQUIPMENTS);
 
     public long getId() {
         return id;
@@ -89,6 +102,10 @@ public final class Player extends AbstractRootModel<Player> {
         return wallet;
     }
 
+    public DefaultMapModel<String, Equipment> getEquipments() {
+        return equipments;
+    }
+
     @Override
     protected Class<?> storeDataType() {
         return PlayerStoreData.class;
@@ -99,6 +116,7 @@ public final class Player extends AbstractRootModel<Player> {
         id = 0;
         basicInfo.clean();
         wallet.clean();
+        equipments.clean();
         return this;
     }
 
@@ -116,6 +134,9 @@ public final class Player extends AbstractRootModel<Player> {
         }
         if (changedFields.get(FIELD_INDEX_WALLET)) {
             getWallet().appendUpdates(updates);
+        }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
+            getEquipments().appendUpdates(updates);
         }
     }
 
@@ -140,24 +161,33 @@ public final class Player extends AbstractRootModel<Player> {
                 data.put("wallet", _wallet);
             }
         }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
+            var _equipments = getEquipments().toUpdated();
+            if (_equipments != null) {
+                data.put("equipments", _equipments);
+            }
+        }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    protected PlayerStoreData toStoreData() {
+    public PlayerStoreData toStoreData() {
         var _storeData = new PlayerStoreData();
         _storeData.id = getId();
         _storeData.basicInfo = getBasicInfo().toStoreData();
         _storeData.wallet = getWallet().toStoreData();
+        _storeData.equipments = (Map<String, Equipment.EquipmentStoreData>) getEquipments().toStoreData();
         return _storeData;
     }
 
     @Override
-    protected Player loadStoreData(Object data) {
+    public Player loadStoreData(Object data) {
         resetStates();
         if (data instanceof PlayerStoreData _storeData) {
             id = _storeData.id;
             basicInfo.loadStoreData(_storeData.basicInfo);
             wallet.loadStoreData(_storeData.wallet);
+            equipments.loadStoreData(_storeData.equipments);
         }
         return this;
     }
@@ -169,6 +199,12 @@ public final class Player extends AbstractRootModel<Player> {
             var _basicInfo = getBasicInfo().toDeleted();
             if (_basicInfo != null) {
                 data.put("basicInfo", _basicInfo);
+            }
+        }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
+            var _equipments = getEquipments().toDeleted();
+            if (_equipments != null) {
+                data.put("equipments", _equipments);
             }
         }
     }
@@ -185,11 +221,14 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.get(FIELD_INDEX_BASIC_INFO) && getBasicInfo().anyDeleted()) {
             return true;
         }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS) && getEquipments().anyDeleted()) {
+            return true;
+        }
         return false;
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         if (isFullUpdate()) {
             return 0;
         }
@@ -201,6 +240,9 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.get(FIELD_INDEX_BASIC_INFO)) {
             _size += getBasicInfo().deletedSize();
         }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
+            _size += getEquipments().deletedSize();
+        }
         return _size;
     }
 
@@ -210,6 +252,7 @@ public final class Player extends AbstractRootModel<Player> {
         _bsonValue.append(STORE_NAME_ID, new BsonInt64(getId()));
         _bsonValue.append(STORE_NAME_BASIC_INFO, getBasicInfo().toBsonValue());
         _bsonValue.append(STORE_NAME_WALLET, getWallet().toBsonValue());
+        _bsonValue.append(STORE_NAME_EQUIPMENTS, getEquipments().toBsonValue());
         return _bsonValue;
     }
 
@@ -219,6 +262,7 @@ public final class Player extends AbstractRootModel<Player> {
         id = BsonUtil.longValue(src, STORE_NAME_ID).orElse(0L);
         BsonUtil.documentValue(src, STORE_NAME_BASIC_INFO).ifPresentOrElse(getBasicInfo()::load, getBasicInfo()::clean);
         BsonUtil.documentValue(src, STORE_NAME_WALLET).ifPresentOrElse(getWallet()::load, getWallet()::clean);
+        BsonUtil.documentValue(src, STORE_NAME_EQUIPMENTS).ifPresentOrElse(getEquipments()::load, getEquipments()::clean);
         return this;
     }
 
@@ -228,6 +272,7 @@ public final class Player extends AbstractRootModel<Player> {
         _displayData.put("id", getId());
         _displayData.put("basicInfo", getBasicInfo().toDisplayData());
         _displayData.put("wallet", getWallet().toDisplayData());
+        _displayData.put("equipments", getEquipments().toDisplayData());
         return _displayData;
     }
 
@@ -246,6 +291,9 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.get(FIELD_INDEX_WALLET) && getWallet().anyUpdated()) {
             return true;
         }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS) && getEquipments().anyUpdated()) {
+            return true;
+        }
         return false;
     }
 
@@ -259,7 +307,16 @@ public final class Player extends AbstractRootModel<Player> {
         id = src.getId();
         basicInfo.deepCopyFrom(src.getBasicInfo());
         wallet.deepCopyFrom(src.getWallet());
+        equipments.deepCopyFrom(src.getEquipments());
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "Player(id=" + getId() +
+                ", basicInfo=" + getBasicInfo() +
+                ", wallet=" + getWallet() +
+                ", equipments=" + getEquipments() +
+                ")";
+    }
 }

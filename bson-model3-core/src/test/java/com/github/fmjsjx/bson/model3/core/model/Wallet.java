@@ -28,7 +28,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     public static final int FIELD_INDEX_DIAMOND_TOTAL = 4;
     public static final int FIELD_INDEX_DIAMOND_CONSUMED = 5;
 
-    protected static final class WalletStoreData {
+    public static final class WalletStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_COIN_TOTAL)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_COIN_TOTAL)
@@ -46,9 +46,6 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_DIAMOND_CONSUMED)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_DIAMOND_CONSUMED)
         private long diamondConsumed;
-
-        protected WalletStoreData() {
-        }
 
         public long getCoinTotal() {
             return coinTotal;
@@ -190,7 +187,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    protected WalletStoreData toStoreData() {
+    public WalletStoreData toStoreData() {
         var _storeData = new WalletStoreData();
         _storeData.coinTotal = getCoinTotal();
         _storeData.coinConsumed = getCoinConsumed();
@@ -200,7 +197,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    protected Wallet loadStoreData(Object data) {
+    public Wallet loadStoreData(Object data) {
         resetStates();
         if (data instanceof WalletStoreData _storeData) {
             coinTotal = _storeData.coinTotal;
@@ -222,7 +219,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         return 0;
     }
 

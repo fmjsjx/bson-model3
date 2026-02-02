@@ -144,21 +144,6 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         return path().resolve(key);
     }
 
-    /**
-     * Converts this model to store data.
-     *
-     * @return the store data
-     */
-    protected abstract Object toStoreData();
-
-    /**
-     * Loads data from the specified store data to this model.
-     *
-     * @param data the store data
-     * @return this model
-     */
-    protected abstract Self loadStoreData(Object data);
-
     @Override
     public Self reset() {
         return resetChildren().resetStates();
@@ -190,15 +175,6 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
     public boolean anyDeleted() {
         return deletedSize() > 0;
     }
-
-    /**
-     * Returns the number of deleted values in this model within the
-     * current context.
-     *
-     * @return the number of deleted values in this model within the
-     * current context
-     */
-    protected abstract int deletedSize();
 
     /**
      * Returns whether this model is in full update mode or not.

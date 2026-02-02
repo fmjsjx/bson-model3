@@ -163,7 +163,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    protected Self loadStoreData(Object data) {
+    public Self loadStoreData(Object data) {
         if (data instanceof Map<?, ?> map) {
             return loadStoreData(map);
         }
@@ -171,7 +171,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    protected Map<?, ? extends @Nullable Object> toStoreData() {
+    public Map<?, ? extends @Nullable Object> toStoreData() {
         var mappings = this.mappings;
         if (mappings.isEmpty()) {
             return Map.of();
@@ -378,7 +378,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         if (isFullUpdate()) {
             return 0;
         }

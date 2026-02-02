@@ -76,13 +76,13 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
 
     @Override
     protected Object encodeStoreValue(V value) {
-        return ((AbstractObjectModel<?>) value).toStoreData();
+        return value.toStoreData();
     }
 
     @Override
     protected V decodeStoreValue(Object value) {
         V v = valueFactory.get();
-        ((AbstractObjectModel<?>) v).loadStoreData(value);
+        v.loadStoreData(value);
         return v;
     }
 
@@ -180,7 +180,7 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         if (isFullUpdate()) {
             return 0;
         }

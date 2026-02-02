@@ -33,7 +33,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     public static final int FIELD_INDEX_CREATED_TIME = 3;
     public static final int FIELD_INDEX_CREATED_AT = 4;
 
-    protected static final class BasicInfoStoreData {
+    public static final class BasicInfoStoreData {
 
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_NAME)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_NAME)
@@ -54,9 +54,6 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_CREATED_TIME)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_CREATED_TIME)
         private long createdTime;
-
-        protected BasicInfoStoreData() {
-        }
 
         public String getName() {
             return name;
@@ -211,7 +208,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
-    protected BasicInfoStoreData toStoreData() {
+    public BasicInfoStoreData toStoreData() {
         var _storeData = new BasicInfoStoreData();
         _storeData.name = getName();
         var _avatar = getAvatar();
@@ -227,7 +224,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
-    protected BasicInfo loadStoreData(Object data) {
+    public BasicInfo loadStoreData(Object data) {
         resetStates();
         if (data instanceof BasicInfoStoreData _storeData) {
             name = _storeData.name;
@@ -269,7 +266,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
-    protected int deletedSize() {
+    public int deletedSize() {
         if (isFullUpdate()) {
             return 0;
         }
