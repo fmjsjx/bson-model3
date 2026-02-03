@@ -1,10 +1,7 @@
 package com.github.fmjsjx.bson.model3.core;
 
 import org.bson.BsonValue;
-import org.bson.conversions.Bson;
 import org.jspecify.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * The basic abstract implementation of {@link BsonModel}.
@@ -30,74 +27,31 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         return (P) parent;
     }
 
-    /**
-     * Sets the parent of this model.
-     *
-     * @param parent the parent
-     * @return this model
-     */
+
     @SuppressWarnings("unchecked")
+    @Override
     public Self parent(BsonModel<?, ?> parent) {
         this.parent = parent;
         return (Self) this;
     }
 
-    /**
-     * Sets the index of this model.
-     *
-     * @param index the index
-     * @return this model
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public Self index(int index) {
         this.index = index;
         return (Self) this;
     }
 
-    /**
-     * Sets the key of this model.
-     *
-     * @param key the key
-     * @return this model
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public Self key(Object key) {
         this.key = key;
         return (Self) this;
     }
 
-    /**
-     * Checks if this model is attached to the parent.
-     *
-     * @return {@code true} if this model is attached to a parent,
-     * {@code false} otherwise
-     */
-    protected boolean isAttached() {
-        return parent != null;
-    }
-
-    /**
-     * Ensures this model is detached from a parent.
-     *
-     * @return this model
-     * @throws IllegalStateException if this model is already attached to
-     *                               a parent model
-     */
     @SuppressWarnings("unchecked")
-    protected Self ensureDetached() throws IllegalStateException {
-        if (isAttached()) {
-            throw new IllegalStateException("This model is already attached to a parent model.");
-        }
-        return (Self) this;
-    }
-
-    /**
-     * Unbinds this model to the parent.
-     *
-     * @return this model
-     */
-    @SuppressWarnings("unchecked")
-    protected Self detach() {
+    @Override
+    public Self detach() {
         if (isAttached()) {
             parent = null;
             index = -1;
@@ -176,38 +130,18 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
         return deletedSize() > 0;
     }
 
-    /**
-     * Returns whether this model is in full update mode or not.
-     *
-     * @return {@code true} if this model is in full update mode,
-     * {@code false} otherwise
-     */
-    protected boolean isFullUpdate() {
+    @Override
+    public boolean isFullUpdate() {
         return fullUpdate;
     }
 
-    /**
-     * Sets whether this model is in full update mode or not.
-     *
-     * @param fullUpdate {@code true} if this model is in full update
-     *                   mode, {@code false} otherwise
-     * @return this model
-     */
     @SuppressWarnings("unchecked")
-    protected Self fullUpdate(boolean fullUpdate) {
+    @Override
+    public Self fullUpdate(boolean fullUpdate) {
         if (fullUpdate != isFullUpdate()) {
             this.fullUpdate = fullUpdate;
         }
         return (Self) this;
-    }
-
-    /**
-     * Sets this model to full update mode.
-     *
-     * @return this model
-     */
-    protected Self fullUpdate() {
-        return fullUpdate(true);
     }
 
     /**
@@ -240,20 +174,5 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
      * @param key   the key, may be {@code null}
      */
     protected abstract void onChildChanged(int index, @Nullable Object key);
-
-    /**
-     * Cleans this model.
-     *
-     * @return this model
-     */
-    public abstract Self clean();
-
-    /**
-     * Appends the updates of this model to the specified list given.
-     *
-     * @param updates the list of updates
-     * @return the number of updates added to the list
-     */
-    public abstract int appendUpdates(List<Bson> updates);
 
 }

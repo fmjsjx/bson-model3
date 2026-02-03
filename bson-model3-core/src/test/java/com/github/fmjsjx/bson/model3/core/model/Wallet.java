@@ -22,6 +22,11 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     public static final String STORE_NAME_DIAMOND_TOTAL = "dt";
     public static final String STORE_NAME_DIAMOND_CONSUMED = "dc";
 
+    public static final String FIELD_NAME_COIN = "coin";
+    public static final String FIELD_NAME_COIN_TOTAL = "coinTotal";
+    public static final String FIELD_NAME_DIAMOND = "diamond";
+    public static final String FIELD_NAME_DIAMOND_TOTAL = "diamondTotal";
+
     public static final int FIELD_INDEX_COIN = 0;
     public static final int FIELD_INDEX_COIN_TOTAL = 1;
     public static final int FIELD_INDEX_COIN_CONSUMED = 2;
@@ -175,16 +180,16 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_COIN)) {
-            data.put("coin", getCoin());
+            data.put(FIELD_NAME_COIN, getCoin());
         }
         if (changedFields.get(FIELD_INDEX_COIN_TOTAL)) {
-            data.put("coinTotal", getCoinTotal());
+            data.put(FIELD_NAME_COIN_TOTAL, getCoinTotal());
         }
         if (changedFields.get(FIELD_INDEX_DIAMOND)) {
-            data.put("diamond", getDiamond());
+            data.put(FIELD_NAME_DIAMOND, getDiamond());
         }
         if (changedFields.get(FIELD_INDEX_DIAMOND_TOTAL)) {
-            data.put("diamondTotal", getDiamondTotal());
+            data.put(FIELD_NAME_DIAMOND_TOTAL, getDiamondTotal());
         }
     }
 
@@ -248,10 +253,10 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     @Override
     public Map<String, ?> toDisplayData() {
         var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put("coin", getCoin());
-        _displayData.put("coinTotal", getCoinTotal());
-        _displayData.put("diamond", getDiamond());
-        _displayData.put("diamondTotal", getDiamondTotal());
+        _displayData.put(FIELD_NAME_COIN, getCoin());
+        _displayData.put(FIELD_NAME_COIN_TOTAL, getCoinTotal());
+        _displayData.put(FIELD_NAME_DIAMOND, getDiamond());
+        _displayData.put(FIELD_NAME_DIAMOND_TOTAL, getDiamondTotal());
         return _displayData;
     }
 

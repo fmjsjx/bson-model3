@@ -28,6 +28,11 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     public static final String STORE_NAME_BIRTHDAY = "b";
     public static final String STORE_NAME_CREATED_TIME = "ct";
 
+    public static final String FIELD_NAME_NAME = "name";
+    public static final String FIELD_NAME_AVATAR = "avatar";
+    public static final String FIELD_NAME_BIRTHDAY = "birthday";
+    public static final String FIELD_NAME_CREATED_AT = "createdAt";
+
     public static final int FIELD_INDEX_NAME = 0;
     public static final int FIELD_INDEX_AVATAR = 1;
     public static final int FIELD_INDEX_BIRTHDAY = 2;
@@ -190,22 +195,22 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_NAME)) {
-            data.put("name", getName());
+            data.put(FIELD_NAME_NAME, getName());
         }
         if (changedFields.get(FIELD_INDEX_AVATAR)) {
             var _avatar = getAvatar();
             if (_avatar != null) {
-                data.put("avatar", _avatar);
+                data.put(FIELD_NAME_AVATAR, _avatar);
             }
         }
         if (changedFields.get(FIELD_INDEX_BIRTHDAY)) {
             var _birthday = getBirthday();
             if (_birthday != null) {
-                data.put("birthday", _birthday.toString());
+                data.put(FIELD_NAME_BIRTHDAY, _birthday.toString());
             }
         }
         if (changedFields.get(FIELD_INDEX_CREATED_AT)) {
-            data.put("createdAt", getCreatedAt());
+            data.put(FIELD_NAME_CREATED_AT, getCreatedAt());
         }
     }
 
@@ -242,10 +247,10 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     protected void appendDeletedData(Map<String, ? super Object> data) {
         var changedFields = this.changedFields;
         if (changedFields.get(FIELD_INDEX_AVATAR) && getAvatar() == null) {
-            data.put("avatar", BsonModelConstants.DELETED_VALUE);
+            data.put(FIELD_NAME_AVATAR, BsonModelConstants.DELETED_VALUE);
         }
         if (changedFields.get(FIELD_INDEX_BIRTHDAY) && getBirthday() == null) {
-            data.put("birthday", BsonModelConstants.DELETED_VALUE);
+            data.put(FIELD_NAME_BIRTHDAY, BsonModelConstants.DELETED_VALUE);
         }
     }
 
@@ -315,16 +320,16 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     @Override
     public Map<String, ?> toDisplayData() {
         var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put("name", getName());
+        _displayData.put(FIELD_NAME_NAME, getName());
         var _avatar = getAvatar();
         if (_avatar != null) {
-            _displayData.put("avatar", _avatar);
+            _displayData.put(FIELD_NAME_AVATAR, _avatar);
         }
         var _birthday = getBirthday();
         if (_birthday != null) {
-            _displayData.put("birthday", _birthday.toString());
+            _displayData.put(FIELD_NAME_BIRTHDAY, _birthday.toString());
         }
-        _displayData.put("createdAt", getCreatedAt());
+        _displayData.put(FIELD_NAME_CREATED_AT, getCreatedAt());
         return _displayData;
     }
 

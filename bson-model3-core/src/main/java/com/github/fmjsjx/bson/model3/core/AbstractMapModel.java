@@ -314,7 +314,7 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
     @Override
     public Self clear() {
         changedKeys.clear();
-        return fullUpdate(true).clearMappings().triggerChange();
+        return fullUpdate().clearMappings().triggerChange();
     }
 
     @SuppressWarnings("unchecked")

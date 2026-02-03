@@ -1,8 +1,10 @@
 package com.github.fmjsjx.bson.model3.core;
 
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,6 +40,62 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
      * @return the parent model of this model, may be {@code null}
      */
     <P extends BsonModel<?, ?>> @Nullable P parent();
+
+    /**
+     * Sets the parent of this model.
+     *
+     * @param parent the parent
+     * @return this model
+     */
+    Self parent(BsonModel<?, ?> parent);
+
+    /**
+     * Sets the index of this model.
+     *
+     * @param index the index
+     * @return this model
+     */
+    Self index(int index);
+
+    /**
+     * Sets the key of this model.
+     *
+     * @param key the key
+     * @return this model
+     */
+    Self key(Object key);
+
+    /**
+     * Checks if this model is attached to the parent.
+     *
+     * @return {@code true} if this model is attached to a parent,
+     * {@code false} otherwise
+     */
+    default boolean isAttached() {
+        return parent() != null;
+    }
+
+    /**
+     * Ensures this model is detached from a parent.
+     *
+     * @return this model
+     * @throws IllegalStateException if this model is already attached to
+     *                               a parent model
+     */
+    @SuppressWarnings("unchecked")
+    default Self ensureDetached() throws IllegalStateException {
+        if (isAttached()) {
+            throw new IllegalStateException("This model is already attached to a parent model.");
+        }
+        return (Self) this;
+    }
+
+    /**
+     * Unbinds this model to the parent.
+     *
+     * @return this model
+     */
+    Self detach();
 
     /**
      * Returns the dot notation path of this model.
@@ -133,6 +191,32 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
     @Nullable Map<? extends Object, ? extends Object> toDeleted();
 
     /**
+     * Returns whether this model is in full update mode or not.
+     *
+     * @return {@code true} if this model is in full update mode,
+     * {@code false} otherwise
+     */
+    boolean isFullUpdate();
+
+    /**
+     * Sets whether this model is in full update mode or not.
+     *
+     * @param fullUpdate {@code true} if this model is in full update
+     *                   mode, {@code false} otherwise
+     * @return this model
+     */
+    Self fullUpdate(boolean fullUpdate);
+
+    /**
+     * Sets this model to full update mode.
+     *
+     * @return this model
+     */
+    default Self fullUpdate() {
+        return fullUpdate(true);
+    }
+
+    /**
      * Creates and returns a deep copy of this model.
      *
      * @return a deep copy of this model
@@ -147,4 +231,18 @@ public interface BsonModel<T extends BsonValue, Self extends BsonModel<T, Self>>
      */
     Self deepCopyFrom(Self src);
 
+    /**
+     * Cleans this model.
+     *
+     * @return this model
+     */
+    Self clean();
+
+    /**
+     * Appends the updates of this model to the specified list given.
+     *
+     * @param updates the list of updates
+     * @return the number of updates added to the list
+     */
+    int appendUpdates(List<Bson> updates);
 }

@@ -98,15 +98,13 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
 
     @Override
     protected @Nullable V putMapping(K key, V value) {
-        if (value instanceof AbstractBsonModel<?, ?> model) {
-            model.ensureDetached().parent(this).key(key);
-        }
+        value.ensureDetached().parent(this).key(key);
         return detach(super.putMapping(key, value));
     }
 
     private @Nullable V detach(@Nullable V value) {
-        if (value instanceof AbstractBsonModel<?, ?> model) {
-            model.detach();
+        if (value != null) {
+            value.detach();
         }
         return value;
     }
@@ -222,8 +220,8 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
             V value = mappings.get(key);
             if (value == null) {
                 updates.add(unset(path.path(mapKey(key))));
-            } else if (value instanceof AbstractBsonModel<?, ?> model) {
-                model.appendUpdates(updates);
+            } else {
+                value.appendUpdates(updates);
             }
         }
         return updates.size() - originalSize;

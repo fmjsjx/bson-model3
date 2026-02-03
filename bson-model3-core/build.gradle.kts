@@ -36,6 +36,7 @@ description = "bson-model3/Core"
 tasks.test {
     // Use junit platform for unit tests.
     useJUnitPlatform()
+    jvmArgs = jvmArgs + listOf("-server")
 }
 
 publishing {

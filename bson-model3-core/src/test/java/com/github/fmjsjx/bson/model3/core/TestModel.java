@@ -8,6 +8,7 @@ import com.github.fmjsjx.libcommon.json.Jackson3Library;
 import com.github.fmjsjx.libcommon.json.JsoniterLibrary;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -43,18 +44,29 @@ public class TestModel {
         equipment1.setDef(10);
         equipment1.setHp(20);
         player.getEquipments().put(equipment1.getId(), equipment1);
+        player.getItems().put(400001, 10);
+        player.getItems().put(400002, 5);
+        player.getItems().put(500001, 1);
+        player.increaseUpdatedVersion();
         System.err.println(player);
         var json = player.jsonMarshal(Fastjson2Library.getInstance());
         System.err.println(json);
+        var jsonBytes = player.jsonMarshalToBytes(Fastjson2Library.getInstance());
+        System.err.println(new String(jsonBytes, StandardCharsets.UTF_8));
         var player2 = new Player().jsonUnmarshal(JsoniterLibrary.getInstance(), json);
         System.err.println(player2);
+        System.err.println(new Player().jsonUnmarshal(JsoniterLibrary.getInstance(), jsonBytes));
         var player3 = new Player().jsonUnmarshal(Fastjson2Library.getInstance(), json);
         System.err.println(player3);
+        System.err.println(new Player().jsonUnmarshal(Fastjson2Library.getInstance(), jsonBytes));
 
         // test performance
         long[] t1 = new long[5];
         long[] t2 = new long[5];
         long[] t3 = new long[5];
+        long[] t4 = new long[5];
+        long[] t5 = new long[5];
+        long[] t6 = new long[5];
         for (var index = 0; index < t1.length; index++) {
             var t = System.nanoTime();
             for (var i = 0; i < 1_000_000; i++) {
@@ -71,40 +83,96 @@ public class TestModel {
                 new Player().jsonUnmarshal(JsoniterLibrary.getInstance(), json);
             }
             t3[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                new Player().jsonUnmarshal(Jackson3Library.getInstance(), jsonBytes);
+            }
+            t4[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                new Player().jsonUnmarshal(Fastjson2Library.getInstance(), jsonBytes);
+            }
+            t5[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                new Player().jsonUnmarshal(JsoniterLibrary.getInstance(), jsonBytes);
+            }
+            t6[index] = System.nanoTime() - t;
         }
-        System.err.println("----------  Jackson3  ----------");
-        LongStream.of(t1).sorted().forEach(System.out::println);
-        System.err.println("--------------------------------");
-        System.err.println("----------  Fastjson2  ---------");
-        LongStream.of(t2).sorted().forEach(System.out::println);
-        System.err.println("--------------------------------");
-        System.err.println("----------  JsonIter  ----------");
-        LongStream.of(t3).sorted().forEach(System.out::println);
-        System.err.println("--------------------------------");
-        System.err.println("================================");
+        System.err.println("----------  Jackson3 string  ----------");
+        LongStream.of(t1).sorted().forEach(System.err::println);
+        System.err.println("----------  Jackson3 bytes  ------------");
+        LongStream.of(t4).sorted().forEach(System.err::println);
+        System.err.println("----------------------------------------");
+        System.err.println("----------  Fastjson2 string  ----------");
+        LongStream.of(t2).sorted().forEach(System.err::println);
+        System.err.println("----------  Fastjson2 bytes  ------------");
+        LongStream.of(t5).sorted().forEach(System.err::println);
+        System.err.println("-----------------------------------------");
+        System.err.println("----------  Jsoniter string  -----------");
+        LongStream.of(t3).sorted().forEach(System.err::println);
+        System.err.println("----------  Jsoniter bytes  ------------");
+        LongStream.of(t6).sorted().forEach(System.err::println);
+        System.err.println("----------------------------------------");
+        System.err.println("========================================");
 
         long[] d1 = new long[5];
         long[] d2 = new long[5];
+        long[] d3 = new long[5];
+        long[] d4 = new long[5];
+        long[] d5 = new long[5];
+        long[] d6 = new long[5];
         for (var index = 0; index < d1.length; index++) {
             var t = System.nanoTime();
             for (var i = 0; i < 1_000_000; i++) {
-                json = new Player().jsonMarshal(Fastjson2Library.getInstance());
+                json = player.jsonMarshal(Jackson3Library.getInstance());
             }
             d1[index] = System.nanoTime() - t;
             t = System.nanoTime();
             for (var i = 0; i < 1_000_000; i++) {
-                json = new Player().jsonMarshal(Jackson3Library.getInstance());
+                json = player.jsonMarshal(Fastjson2Library.getInstance());
             }
             d2[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                json = player.jsonMarshal(JsoniterLibrary.getInstance());
+            }
+            d3[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                jsonBytes = player.jsonMarshalToBytes(Jackson3Library.getInstance());
+            }
+            d4[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                jsonBytes = player.jsonMarshalToBytes(Fastjson2Library.getInstance());
+            }
+            d5[index] = System.nanoTime() - t;
+            t = System.nanoTime();
+            for (var i = 0; i < 1_000_000; i++) {
+                jsonBytes = player.jsonMarshalToBytes(JsoniterLibrary.getInstance());
+            }
+            d6[index] = System.nanoTime() - t;
         }
-        System.err.println("----------  Fastjson2  ---------");
-        LongStream.of(d1).sorted().forEach(System.out::println);
-        System.err.println("--------------------------------");
-        System.err.println("----------  Jackson3  ----------");
-        LongStream.of(d2).sorted().forEach(System.out::println);
-        System.err.println("--------------------------------");
-        System.err.println("================================");
+        System.err.println("----------  Jackson3 string  -----------");
+        LongStream.of(d1).sorted().forEach(System.err::println);
+        System.err.println("----------  Jackson3 bytes  ------------");
+        LongStream.of(d4).sorted().forEach(System.err::println);
+        System.err.println("----------------------------------------");
+        System.err.println("----------  Fastjson2 string  ----------");
+        LongStream.of(d2).sorted().forEach(System.err::println);
+        System.err.println("----------  Fastjson2 bytes  -----------");
+        LongStream.of(d5).sorted().forEach(System.err::println);
+        System.err.println("----------------------------------------");
+        System.err.println("========================================");
+        System.err.println("----------  Jsoniter string  -----------");
+        LongStream.of(d3).sorted().forEach(System.err::println);
+        System.err.println("----------  Jsoniter bytes  ------------");
+        LongStream.of(d6).sorted().forEach(System.err::println);
+        System.err.println("----------------------------------------");
+        System.err.println("========================================");
         System.err.println(json);
+        System.err.println(new String(jsonBytes, StandardCharsets.UTF_8));
     }
 
 }

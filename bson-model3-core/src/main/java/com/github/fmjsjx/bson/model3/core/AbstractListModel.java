@@ -241,7 +241,7 @@ public abstract class AbstractListModel<E, Self extends AbstractListModel<E, Sel
     @Override
     public Self clear() {
         changedIndices.clear();
-        return fullUpdate(true).clearElements().triggerChange();
+        return fullUpdate().clearElements().triggerChange();
     }
 
     /**
