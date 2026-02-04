@@ -23,7 +23,7 @@ dependencies {
         // JSpecify
         compileOnly("org.jspecify:jspecify:1.0.0")
         implementation("org.slf4j:slf4j-api:2.0.17")
-        implementation("ch.qos.logback:logback-classic:1.5.24")
+        implementation("ch.qos.logback:logback-classic:1.5.27")
         api("com.jsoniter:jsoniter:0.9.23")
         val jrubyVersion = "10.0.3.0"
         implementation("org.jruby:jruby-complete:$jrubyVersion")
