@@ -194,40 +194,13 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    public WalletStoreData toStoreData() {
-        var _storeData = new WalletStoreData();
-        _storeData.coinTotal = getCoinTotal();
-        _storeData.coinConsumed = getCoinConsumed();
-        _storeData.diamondTotal = getDiamondTotal();
-        _storeData.diamondConsumed = getDiamondConsumed();
-        return _storeData;
-    }
-
-    @Override
-    public Wallet loadStoreData(Object data) {
-        resetStates();
-        if (data instanceof WalletStoreData _storeData) {
-            coinTotal = _storeData.coinTotal;
-            coinConsumed = _storeData.coinConsumed;
-            diamondTotal = _storeData.diamondTotal;
-            diamondConsumed = _storeData.diamondConsumed;
-        }
-        return this;
-    }
-
-    @Override
-    public @Nullable Map<String, ?> toDeleted() {
-        return null;
-    }
-
-    @Override
-    public boolean anyDeleted() {
-        return false;
-    }
-
-    @Override
-    public int deletedSize() {
-        return 0;
+    public Map<String, ?> toDisplayData() {
+        var _displayData = new LinkedHashMap<String, Object>();
+        _displayData.put(FIELD_NAME_COIN, getCoin());
+        _displayData.put(FIELD_NAME_COIN_TOTAL, getCoinTotal());
+        _displayData.put(FIELD_NAME_DIAMOND, getDiamond());
+        _displayData.put(FIELD_NAME_DIAMOND_TOTAL, getDiamondTotal());
+        return _displayData;
     }
 
     @Override
@@ -251,13 +224,25 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     @Override
-    public Map<String, ?> toDisplayData() {
-        var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_COIN, getCoin());
-        _displayData.put(FIELD_NAME_COIN_TOTAL, getCoinTotal());
-        _displayData.put(FIELD_NAME_DIAMOND, getDiamond());
-        _displayData.put(FIELD_NAME_DIAMOND_TOTAL, getDiamondTotal());
-        return _displayData;
+    public WalletStoreData toStoreData() {
+        var _storeData = new WalletStoreData();
+        _storeData.coinTotal = getCoinTotal();
+        _storeData.coinConsumed = getCoinConsumed();
+        _storeData.diamondTotal = getDiamondTotal();
+        _storeData.diamondConsumed = getDiamondConsumed();
+        return _storeData;
+    }
+
+    @Override
+    public Wallet loadStoreData(Object data) {
+        resetStates();
+        if (data instanceof WalletStoreData _storeData) {
+            coinTotal = _storeData.coinTotal;
+            coinConsumed = _storeData.coinConsumed;
+            diamondTotal = _storeData.diamondTotal;
+            diamondConsumed = _storeData.diamondConsumed;
+        }
+        return this;
     }
 
     @Override
@@ -282,6 +267,21 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public @Nullable Map<String, ?> toDeleted() {
+        return null;
+    }
+
+    @Override
+    public boolean anyDeleted() {
+        return false;
+    }
+
+    @Override
+    public int deletedSize() {
+        return 0;
     }
 
     @Override

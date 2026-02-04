@@ -222,42 +222,14 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
     }
 
     @Override
-    public EquipmentStoreData toStoreData() {
-        var _storeData = new EquipmentStoreData();
-        _storeData.id = getId();
-        _storeData.refId = getRefId();
-        _storeData.atk = getAtk();
-        _storeData.def = getDef();
-        _storeData.hp = getHp();
-        return _storeData;
-    }
-
-    @Override
-    public Equipment loadStoreData(Object data) {
-        resetStates();
-        if (data instanceof EquipmentStoreData _storeData) {
-            id = _storeData.id;
-            refId = _storeData.refId;
-            atk = _storeData.atk;
-            def = _storeData.def;
-            hp = _storeData.hp;
-        }
-        return this;
-    }
-
-    @Override
-    public @Nullable Map<String, ?> toDeleted() {
-        return null;
-    }
-
-    @Override
-    public boolean anyDeleted() {
-        return false;
-    }
-
-    @Override
-    public int deletedSize() {
-        return 0;
+    public Map<String, ?> toDisplayData() {
+        var _displayData = new LinkedHashMap<String, Object>();
+        _displayData.put(FIELD_NAME_ID, getId());
+        _displayData.put(FIELD_NAME_REF_ID, getRefId());
+        _displayData.put(FIELD_NAME_ATK, getAtk());
+        _displayData.put(FIELD_NAME_DEF, getDef());
+        _displayData.put(FIELD_NAME_HP, getHp());
+        return _displayData;
     }
 
     @Override
@@ -283,14 +255,27 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
     }
 
     @Override
-    public Map<String, ?> toDisplayData() {
-        var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_ID, getId());
-        _displayData.put(FIELD_NAME_REF_ID, getRefId());
-        _displayData.put(FIELD_NAME_ATK, getAtk());
-        _displayData.put(FIELD_NAME_DEF, getDef());
-        _displayData.put(FIELD_NAME_HP, getHp());
-        return _displayData;
+    public EquipmentStoreData toStoreData() {
+        var _storeData = new EquipmentStoreData();
+        _storeData.id = getId();
+        _storeData.refId = getRefId();
+        _storeData.atk = getAtk();
+        _storeData.def = getDef();
+        _storeData.hp = getHp();
+        return _storeData;
+    }
+
+    @Override
+    public Equipment loadStoreData(Object data) {
+        resetStates();
+        if (data instanceof EquipmentStoreData _storeData) {
+            id = _storeData.id;
+            refId = _storeData.refId;
+            atk = _storeData.atk;
+            def = _storeData.def;
+            hp = _storeData.hp;
+        }
+        return this;
     }
 
     @Override
@@ -318,6 +303,21 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public @Nullable Map<String, ?> toDeleted() {
+        return null;
+    }
+
+    @Override
+    public boolean anyDeleted() {
+        return false;
+    }
+
+    @Override
+    public int deletedSize() {
+        return 0;
     }
 
     @Override

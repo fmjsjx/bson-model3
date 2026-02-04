@@ -254,6 +254,41 @@ public final class Player extends AbstractRootModel<Player> {
         }
     }
 
+    @Override
+    public Map<String, ?> toDisplayData() {
+        var _displayData = new LinkedHashMap<String, Object>();
+        _displayData.put(FIELD_NAME_ID, getId());
+        _displayData.put(FIELD_NAME_BASIC_INFO, getBasicInfo().toDisplayData());
+        _displayData.put(FIELD_NAME_WALLET, getWallet().toDisplayData());
+        _displayData.put(FIELD_NAME_EQUIPMENTS, getEquipments().toDisplayData());
+        _displayData.put(FIELD_NAME_ITEMS, getItems().toDisplayData());
+        return _displayData;
+    }
+
+    @Override
+    public BsonDocument toBsonValue() {
+        var _bsonValue = new BsonDocument();
+        _bsonValue.append(STORE_NAME_ID, new BsonInt64(getId()));
+        _bsonValue.append(STORE_NAME_BASIC_INFO, getBasicInfo().toBsonValue());
+        _bsonValue.append(STORE_NAME_WALLET, getWallet().toBsonValue());
+        _bsonValue.append(STORE_NAME_EQUIPMENTS, getEquipments().toBsonValue());
+        _bsonValue.append(STORE_NAME_ITEMS, getItems().toBsonValue());
+        _bsonValue.append(STORE_NAME_UPDATED_VERSION, new BsonInt32(getUpdatedVersion()));
+        return _bsonValue;
+    }
+
+    @Override
+    public Player load(BsonDocument src) {
+        resetStates();
+        id = BsonUtil.longValue(src, STORE_NAME_ID).orElse(0L);
+        BsonUtil.documentValue(src, STORE_NAME_BASIC_INFO).ifPresentOrElse(getBasicInfo()::load, getBasicInfo()::clean);
+        BsonUtil.documentValue(src, STORE_NAME_WALLET).ifPresentOrElse(getWallet()::load, getWallet()::clean);
+        BsonUtil.documentValue(src, STORE_NAME_EQUIPMENTS).ifPresentOrElse(getEquipments()::load, getEquipments()::clean);
+        BsonUtil.documentValue(src, STORE_NAME_ITEMS).ifPresentOrElse(getItems()::load, getItems()::clean);
+        updatedVersion = BsonUtil.intValue(src, STORE_NAME_UPDATED_VERSION).orElse(0);
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public PlayerStoreData toStoreData() {
@@ -272,13 +307,40 @@ public final class Player extends AbstractRootModel<Player> {
         resetStates();
         if (data instanceof PlayerStoreData _storeData) {
             id = _storeData.id;
-            basicInfo.loadStoreData(_storeData.basicInfo);
-            wallet.loadStoreData(_storeData.wallet);
-            equipments.loadStoreData(_storeData.equipments);
-            items.loadStoreData(_storeData.items);
+            getBasicInfo().loadStoreData(_storeData.basicInfo);
+            getWallet().loadStoreData(_storeData.wallet);
+            getEquipments().loadStoreData(_storeData.equipments);
+            getItems().loadStoreData(_storeData.items);
             updatedVersion = _storeData.updatedVersion;
         }
         return this;
+    }
+
+    @Override
+    public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
+        var changedFields = this.changedFields;
+        if (changedFields.isEmpty()) {
+            return false;
+        }
+        if (changedFields.get(FIELD_INDEX_BASIC_INFO) && getBasicInfo().anyUpdated()) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_WALLET) && getWallet().anyUpdated()) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_EQUIPMENTS) && getEquipments().anyUpdated()) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_ITEMS) && getItems().anyUpdated()) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_UPDATED_VERSION)) {
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -348,68 +410,6 @@ public final class Player extends AbstractRootModel<Player> {
     }
 
     @Override
-    public BsonDocument toBsonValue() {
-        var _bsonValue = new BsonDocument();
-        _bsonValue.append(STORE_NAME_ID, new BsonInt64(getId()));
-        _bsonValue.append(STORE_NAME_BASIC_INFO, getBasicInfo().toBsonValue());
-        _bsonValue.append(STORE_NAME_WALLET, getWallet().toBsonValue());
-        _bsonValue.append(STORE_NAME_EQUIPMENTS, getEquipments().toBsonValue());
-        _bsonValue.append(STORE_NAME_ITEMS, getItems().toBsonValue());
-        _bsonValue.append(STORE_NAME_UPDATED_VERSION, new BsonInt32(getUpdatedVersion()));
-        return _bsonValue;
-    }
-
-    @Override
-    public Player load(BsonDocument src) {
-        resetStates();
-        id = BsonUtil.longValue(src, STORE_NAME_ID).orElse(0L);
-        BsonUtil.documentValue(src, STORE_NAME_BASIC_INFO).ifPresentOrElse(getBasicInfo()::load, getBasicInfo()::clean);
-        BsonUtil.documentValue(src, STORE_NAME_WALLET).ifPresentOrElse(getWallet()::load, getWallet()::clean);
-        BsonUtil.documentValue(src, STORE_NAME_EQUIPMENTS).ifPresentOrElse(getEquipments()::load, getEquipments()::clean);
-        BsonUtil.documentValue(src, STORE_NAME_ITEMS).ifPresentOrElse(getItems()::load, getItems()::clean);
-        updatedVersion = BsonUtil.intValue(src, STORE_NAME_UPDATED_VERSION).orElse(0);
-        return this;
-    }
-
-    @Override
-    public Map<String, ?> toDisplayData() {
-        var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_ID, getId());
-        _displayData.put(FIELD_NAME_BASIC_INFO, getBasicInfo().toDisplayData());
-        _displayData.put(FIELD_NAME_WALLET, getWallet().toDisplayData());
-        _displayData.put(FIELD_NAME_EQUIPMENTS, getEquipments().toDisplayData());
-        _displayData.put(FIELD_NAME_ITEMS, getItems().toDisplayData());
-        return _displayData;
-    }
-
-    @Override
-    public boolean anyUpdated() {
-        if (isFullUpdate()) {
-            return true;
-        }
-        var changedFields = this.changedFields;
-        if (changedFields.isEmpty()) {
-            return false;
-        }
-        if (changedFields.get(FIELD_INDEX_BASIC_INFO) && getBasicInfo().anyUpdated()) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_WALLET) && getWallet().anyUpdated()) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_EQUIPMENTS) && getEquipments().anyUpdated()) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_ITEMS) && getItems().anyUpdated()) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_UPDATED_VERSION)) {
-            return true;
-        }
-        return false;
-    }
-
-    @Override
     public Player deepCopy() {
         return new Player().deepCopyFrom(this);
     }
@@ -417,10 +417,10 @@ public final class Player extends AbstractRootModel<Player> {
     @Override
     public Player deepCopyFrom(Player src) {
         id = src.getId();
-        basicInfo.deepCopyFrom(src.getBasicInfo());
-        wallet.deepCopyFrom(src.getWallet());
-        equipments.deepCopyFrom(src.getEquipments());
-        items.deepCopyFrom(src.getItems());
+        getBasicInfo().deepCopyFrom(src.getBasicInfo());
+        getWallet().deepCopyFrom(src.getWallet());
+        getEquipments().deepCopyFrom(src.getEquipments());
+        getItems().deepCopyFrom(src.getItems());
         updatedVersion = src.getUpdatedVersion();
         return this;
     }

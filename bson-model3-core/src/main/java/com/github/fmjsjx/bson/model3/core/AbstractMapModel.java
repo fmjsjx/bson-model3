@@ -238,9 +238,20 @@ public abstract class AbstractMapModel<K, V, Self extends AbstractMapModel<K, V,
                 ? removeMapping(key)
                 : putMapping(key, value);
         if (original != value) {
-            triggerChange(key);
+            triggerChange(key, value);
         }
         return original;
+    }
+
+    /**
+     * Triggers the change event for the specified key and value.
+     *
+     * @param key   the key
+     * @param value the value
+     * @return this model
+     */
+    protected Self triggerChange(K key, @Nullable V value) {
+        return triggerChange(key);
     }
 
     /**

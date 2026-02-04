@@ -215,6 +215,48 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
+    public Map<String, ?> toDisplayData() {
+        var _displayData = new LinkedHashMap<String, Object>();
+        _displayData.put(FIELD_NAME_NAME, getName());
+        var _avatar = getAvatar();
+        if (_avatar != null) {
+            _displayData.put(FIELD_NAME_AVATAR, _avatar);
+        }
+        var _birthday = getBirthday();
+        if (_birthday != null) {
+            _displayData.put(FIELD_NAME_BIRTHDAY, _birthday.toString());
+        }
+        _displayData.put(FIELD_NAME_CREATED_AT, getCreatedAt());
+        return _displayData;
+    }
+
+    @Override
+    public BsonDocument toBsonValue() {
+        var _bsonValue = new BsonDocument();
+        _bsonValue.append(STORE_NAME_NAME, new BsonString(getName()));
+        var _avatar = getAvatar();
+        if (_avatar != null) {
+            _bsonValue.append(STORE_NAME_AVATAR, new BsonString(_avatar));
+        }
+        var _birthday = getBirthday();
+        if (_birthday != null) {
+            _bsonValue.append(STORE_NAME_BIRTHDAY, BsonValueUtil.toBsonInt32(_birthday));
+        }
+        _bsonValue.append(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(createdTime));
+        return _bsonValue;
+    }
+
+    @Override
+    public BasicInfo load(BsonDocument src) {
+        resetStates();
+        name = BsonUtil.stringValue(src, STORE_NAME_NAME).orElse("");
+        avatar = BsonUtil.stringValue(src, STORE_NAME_AVATAR).orElse(null);
+        birthday = BsonUtil.dateValue(src, STORE_NAME_BIRTHDAY).orElse(null);
+        createdTime = BsonUtil.dateTimeValue(src, STORE_NAME_CREATED_TIME).orElse(BsonModelConstants.EPOCH_DATE_TIME);
+        return this;
+    }
+
+    @Override
     public BasicInfoStoreData toStoreData() {
         var _storeData = new BasicInfoStoreData();
         _storeData.name = getName();
@@ -241,6 +283,30 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
             createdTime = DateTimeUtil.ofEpochMilli(_storeData.createdTime);
         }
         return this;
+    }
+
+    @Override
+    public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
+        var changedFields = this.changedFields;
+        if (changedFields.isEmpty()) {
+            return false;
+        }
+        if (changedFields.get(FIELD_INDEX_NAME)) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_AVATAR) && getAvatar() != null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_BIRTHDAY) && getBirthday() != null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_CREATED_TIME)) {
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -289,72 +355,6 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
             _size++;
         }
         return _size;
-    }
-
-    @Override
-    public BsonDocument toBsonValue() {
-        var _bsonValue = new BsonDocument();
-        _bsonValue.append(STORE_NAME_NAME, new BsonString(getName()));
-        var _avatar = getAvatar();
-        if (_avatar != null) {
-            _bsonValue.append(STORE_NAME_AVATAR, new BsonString(_avatar));
-        }
-        var _birthday = getBirthday();
-        if (_birthday != null) {
-            _bsonValue.append(STORE_NAME_BIRTHDAY, BsonValueUtil.toBsonInt32(_birthday));
-        }
-        _bsonValue.append(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(createdTime));
-        return _bsonValue;
-    }
-
-    @Override
-    public BasicInfo load(BsonDocument src) {
-        resetStates();
-        name = BsonUtil.stringValue(src, STORE_NAME_NAME).orElse("");
-        avatar = BsonUtil.stringValue(src, STORE_NAME_AVATAR).orElse(null);
-        birthday = BsonUtil.dateValue(src, STORE_NAME_BIRTHDAY).orElse(null);
-        createdTime = BsonUtil.dateTimeValue(src, STORE_NAME_CREATED_TIME).orElse(BsonModelConstants.EPOCH_DATE_TIME);
-        return this;
-    }
-
-    @Override
-    public Map<String, ?> toDisplayData() {
-        var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_NAME, getName());
-        var _avatar = getAvatar();
-        if (_avatar != null) {
-            _displayData.put(FIELD_NAME_AVATAR, _avatar);
-        }
-        var _birthday = getBirthday();
-        if (_birthday != null) {
-            _displayData.put(FIELD_NAME_BIRTHDAY, _birthday.toString());
-        }
-        _displayData.put(FIELD_NAME_CREATED_AT, getCreatedAt());
-        return _displayData;
-    }
-
-    @Override
-    public boolean anyUpdated() {
-        if (isFullUpdate()) {
-            return true;
-        }
-        var changedFields = this.changedFields;
-        if (changedFields.isEmpty()) {
-            return false;
-        }
-        if (changedFields.get(FIELD_INDEX_NAME)) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_AVATAR) && getAvatar() != null) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_BIRTHDAY) && getBirthday() != null) {
-            return true;
-        }
-        if (changedFields.get(FIELD_INDEX_CREATED_TIME)) {
-            return true;
-        }
-        return false;
     }
 
     @Override

@@ -87,6 +87,14 @@ public final class DefaultMapModel<K, V extends ObjectModel<V>> extends Abstract
     }
 
     @Override
+    protected DefaultMapModel<K, V> triggerChange(K key, @Nullable V value) {
+        if (value != null) {
+            value.fullUpdate();
+        }
+        return triggerChange(key);
+    }
+
+    @Override
     protected Object toDisplayValue(V value) {
         return value.toDisplayData();
     }

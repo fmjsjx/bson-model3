@@ -33,7 +33,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            default -> Optional.of(value.asString().getValue());
+            default -> Optional.of(BsonValueUtil.toString(value));
         };
     }
 
@@ -50,7 +50,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            default -> Optional.of(value.asBoolean().getValue());
+            default -> Optional.of(BsonValueUtil.toBoolean(value));
         };
     }
 
@@ -67,12 +67,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> OptionalInt.empty();
             case BsonNull ignored -> OptionalInt.empty();
-            case BsonInt32 bsonInt32 -> OptionalInt.of(bsonInt32.getValue());
-            case BsonInt64 bsonInt64 -> OptionalInt.of((int) bsonInt64.getValue());
-            case BsonDouble bsonDouble -> OptionalInt.of((int) bsonDouble.getValue());
-            case BsonDecimal128 decimal128 -> OptionalInt.of(decimal128.getValue().bigDecimalValue().intValue());
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type NUMBER is of unexpected type " + value.getBsonType());
+            default -> OptionalInt.of(BsonValueUtil.toInt(value));
         };
     }
 
@@ -89,12 +84,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> OptionalLong.empty();
             case BsonNull ignored -> OptionalLong.empty();
-            case BsonInt32 bsonInt32 -> OptionalLong.of(bsonInt32.getValue());
-            case BsonInt64 bsonInt64 -> OptionalLong.of(bsonInt64.getValue());
-            case BsonDouble bsonDouble -> OptionalLong.of((long) bsonDouble.getValue());
-            case BsonDecimal128 decimal128 -> OptionalLong.of(decimal128.getValue().bigDecimalValue().longValue());
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type NUMBER is of unexpected type " + value.getBsonType());
+            default -> OptionalLong.of(BsonValueUtil.toLong(value));
         };
     }
 
@@ -111,12 +101,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> OptionalDouble.empty();
             case BsonNull ignored -> OptionalDouble.empty();
-            case BsonInt32 bsonInt32 -> OptionalDouble.of(bsonInt32.getValue());
-            case BsonInt64 bsonInt64 -> OptionalDouble.of(bsonInt64.getValue());
-            case BsonDouble bsonDouble -> OptionalDouble.of(bsonDouble.getValue());
-            case BsonDecimal128 decimal128 -> OptionalDouble.of(decimal128.getValue().bigDecimalValue().doubleValue());
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type NUMBER is of unexpected type " + value.getBsonType());
+            default -> OptionalDouble.of(BsonValueUtil.toDouble(value));
         };
     }
 
@@ -133,12 +118,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            case BsonDecimal128 decimal128 -> Optional.of(decimal128.getValue().bigDecimalValue());
-            case BsonInt32 bsonInt32 -> Optional.of(BigDecimal.valueOf(bsonInt32.getValue()));
-            case BsonInt64 bsonInt64 -> Optional.of(BigDecimal.valueOf(bsonInt64.getValue()));
-            case BsonDouble bsonDouble -> Optional.of(BigDecimal.valueOf(bsonDouble.getValue()));
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type NUMBER is of unexpected type " + value.getBsonType());
+            default -> Optional.of(BsonValueUtil.toBigDecimal(value));
         };
     }
 
@@ -156,10 +136,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            case BsonDateTime bsonDateTime -> Optional.of(BsonValueUtil.toLocalDateTime(bsonDateTime));
-            case BsonTimestamp bsonTimestamp -> Optional.of(BsonValueUtil.toLocalDateTime(bsonTimestamp));
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type DATE_TIME is of unexpected type " + value.getBsonType());
+            default -> Optional.of(BsonValueUtil.toLocalDateTime(value));
         };
     }
 
@@ -177,10 +154,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            case BsonDateTime bsonDateTime -> Optional.of(BsonValueUtil.toZonedDateTime(bsonDateTime));
-            case BsonTimestamp bsonTimestamp -> Optional.of(BsonValueUtil.toZonedDateTime(bsonTimestamp));
-            default -> throw new BsonInvalidOperationException(
-                    "Value expected to be of type DATE_TIME is of unexpected type " + value.getBsonType());
+            default -> Optional.of(BsonValueUtil.toZonedDateTime(value));
         };
     }
 
@@ -198,7 +172,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            default -> Optional.of(value.asObjectId().getValue());
+            default -> Optional.of(BsonValueUtil.toObjectId(value));
         };
     }
 
@@ -287,7 +261,7 @@ public class BsonUtil {
         return switch (value) {
             case null -> Optional.empty();
             case BsonNull ignored -> Optional.empty();
-            default -> Optional.of(value.asBinary().asUuid(representation));
+            default -> Optional.of(BsonValueUtil.toUuid(value, representation));
         };
     }
 
