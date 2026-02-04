@@ -30,7 +30,7 @@ dependencies {
         implementation("org.jruby:jruby:$jrubyVersion")
         implementation("org.jruby:jruby-core:$jrubyVersion")
         implementation("org.jruby:jruby-stdlib:$jrubyVersion")
-        implementation("org.yaml:snakeyaml:2.4")
+        implementation("org.yaml:snakeyaml:2.5")
     }
 
 }
