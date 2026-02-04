@@ -17,7 +17,7 @@ dependencies {
     // log4j2
     implementation(platform("org.apache.logging.log4j:log4j-bom:2.25.3"))
     // junit-bom
-    testImplementation(platform("org.junit:junit-bom:6.0.1"))
+    testImplementation(platform("org.junit:junit-bom:6.0.2"))
 
     constraints {
         // JSpecify
