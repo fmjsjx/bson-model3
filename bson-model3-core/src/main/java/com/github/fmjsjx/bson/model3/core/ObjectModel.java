@@ -21,7 +21,7 @@ public interface ObjectModel<Self extends ObjectModel<Self>> extends BsonModel<B
      * @return {@code true} if the field at the specified index is
      * changed, otherwise {@code false}
      */
-    boolean fieldChanged(int index);
+    boolean isFieldChanged(int index);
 
     @Override
     Map<String, ? extends Object> toDisplayData();

@@ -53,7 +53,10 @@ public class TestModel {
         player.getItems().put(400002, 5);
         player.getItems().put(500001, 1);
         player.increaseUpdatedVersion();
+        player.setUpdatedTime(player.getBasicInfo().getCreatedTime());
         System.err.println(player);
+        System.err.println(player.toBsonValue());
+        System.err.println(player.toUpdates());
         var json = player.jsonMarshal(Fastjson2Library.getInstance());
         System.err.println(json);
         var jsonBytes = player.jsonMarshalToBytes(Fastjson2Library.getInstance());
@@ -169,13 +172,11 @@ public class TestModel {
         System.err.println("----------  Fastjson2 bytes  -----------");
         LongStream.of(d5).sorted().forEach(System.err::println);
         System.err.println("----------------------------------------");
-        System.err.println("========================================");
         System.err.println("----------  Jsoniter string  -----------");
         LongStream.of(d3).sorted().forEach(System.err::println);
         System.err.println("----------  Jsoniter bytes  ------------");
         LongStream.of(d6).sorted().forEach(System.err::println);
         System.err.println("----------------------------------------");
-        System.err.println("========================================");
         System.err.println(json);
         System.err.println(new String(jsonBytes, StandardCharsets.UTF_8));
     }

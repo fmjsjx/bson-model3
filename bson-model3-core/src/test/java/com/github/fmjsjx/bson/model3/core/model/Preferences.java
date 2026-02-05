@@ -86,7 +86,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     public void setCustom(@Nullable String custom) {
         if (!Objects.equals(this.custom, custom)) {
             this.custom = custom;
-            fieldChanged(FIELD_INDEX_CUSTOM);
+            triggerChange(FIELD_INDEX_CUSTOM);
         }
     }
 
@@ -97,7 +97,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     public void setFeatures(@Nullable List<@Nullable String> features) {
         if (!Objects.equals(this.features, features)) {
             this.features = features;
-            fieldChanged(FIELD_INDEX_FEATURES);
+            triggerChange(FIELD_INDEX_FEATURES);
         }
     }
 
