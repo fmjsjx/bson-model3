@@ -2,6 +2,7 @@ package com.github.fmjsjx.bson.model3.core.model;
 
 import com.alibaba.fastjson2.annotation.JSONType;
 import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
+import com.github.fmjsjx.bson.model3.core.BsonModelConstants;
 import com.github.fmjsjx.bson.model3.core.SingleValueMapModel;
 import com.github.fmjsjx.bson.model3.core.SingleValues;
 import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
@@ -9,7 +10,6 @@ import com.github.fmjsjx.bson.model3.core.util.BsonValueUtil;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -213,7 +213,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Object toStoreData() {
+    public PreferencesStoreData toStoreData() {
         var _storeData = new PreferencesStoreData();
         _storeData.custom = getCustom();
         _storeData.features = getFeatures();
@@ -234,21 +234,103 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
 
     @Override
     public boolean anyUpdated() {
+        if (isFullUpdate()) {
+            return true;
+        }
+        var changedFields = this.changedFields;
+        if (!changedFields.isEmpty()) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() != null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() != null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_ATTRIBUTES) && getAttributes().anyUpdated()) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void appendDeletedData(Map<String, ? super Object> data) {
+        var changedFields = this.changedFields;
+        if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() == null) {
+            data.put(FIELD_NAME_CUSTOM, BsonModelConstants.DELETED_VALUE);
+        }
+        if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() == null) {
+            data.put(FIELD_NAME_FEATURES, BsonModelConstants.DELETED_VALUE);
+        }
+        if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {
+            var _attributes = getAttributes().toDeleted();
+            if (_attributes != null) {
+                data.put(FIELD_NAME_ATTRIBUTES, _attributes);
+            }
+        }
+    }
+
+    @Override
+    public boolean anyDeleted() {
+        if (isFullUpdate()) {
+            return false;
+        }
+        var changedFields = this.changedFields;
+        if (changedFields.isEmpty()) {
+            return false;
+        }
+        if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() == null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() == null) {
+            return true;
+        }
+        if (changedFields.get(FIELD_INDEX_ATTRIBUTES) && getAttributes().anyDeleted()) {
+            return true;
+        }
         return false;
     }
 
     @Override
     public int deletedSize() {
-        return 0;
+        if (isFullUpdate()) {
+            return 0;
+        }
+        var changedFields = this.changedFields;
+        if (changedFields.isEmpty()) {
+            return 0;
+        }
+        var _size = 0;
+        if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() == null) {
+            _size++;
+        }
+        if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() == null) {
+            _size++;
+        }
+        if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {
+            _size += getAttributes().deletedSize();
+        }
+        return _size;
     }
 
     @Override
     public Preferences deepCopy() {
-        return null;
+        return new Preferences().deepCopyFrom(this);
     }
 
     @Override
     public Preferences deepCopyFrom(Preferences src) {
-        return null;
+        custom = src.getCustom();
+        features = src.getFeatures();
+        getAttributes().deepCopyFrom(src.getAttributes());
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "Preferences(custom=" + getCustom() +
+                ", features=" + getFeatures() +
+                ", attributes=" + getAttributes() +
+                ")";
     }
 }

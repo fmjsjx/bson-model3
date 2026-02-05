@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.stream.LongStream;
 
 public class TestModel {
@@ -26,6 +27,10 @@ public class TestModel {
         player.getBasicInfo().setAvatar("https://avatar.test.com/12306");
         player.getBasicInfo().setBirthday(LocalDate.of(2000, 1, 23));
         player.getBasicInfo().setCreatedTime(LocalDateTime.now());
+        player.getPreferences().setCustom("""
+                {"key1":"value1","key2":"value2"}""");
+        player.getPreferences().setFeatures(List.of("guide", "arena"));
+        player.getPreferences().getAttributes().put("channel", "test");
         player.getWallet().setCoinTotal(1000);
         player.getWallet().setCoinConsumed(200);
         player.getWallet().setDiamondTotal(200);
