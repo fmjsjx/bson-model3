@@ -180,7 +180,7 @@ public class BsonUtilTests {
         bson.put("null", BsonNull.VALUE);
 
         assertEquals(Optional.of(now), BsonUtil.dateTimeValue(bson, "dt"));
-        assertTrue(BsonUtil.zonedDateTimeValue(bson, "dt").isPresent());
+        assertEquals(Optional.of(now.atZone(ZoneId.systemDefault())), BsonUtil.zonedDateTimeValue(bson, "dt"));
         assertTrue(BsonUtil.dateTimeValue(bson, "none").isEmpty());
         assertTrue(BsonUtil.zonedDateTimeValue(bson, "none").isEmpty());
         assertTrue(BsonUtil.dateTimeValue(bson, "null").isEmpty());
@@ -189,8 +189,11 @@ public class BsonUtilTests {
         var doc = new Document("dt", new Date(millis));
         doc.append("null", null);
         assertEquals(Optional.of(now), BsonUtil.dateTimeValue(doc, "dt"));
+        assertEquals(Optional.of(now.atZone(ZoneId.systemDefault())), BsonUtil.zonedDateTimeValue(doc, "dt"));
         assertTrue(BsonUtil.dateTimeValue(doc, "none").isEmpty());
         assertTrue(BsonUtil.dateTimeValue(doc, "null").isEmpty());
+        assertTrue(BsonUtil.zonedDateTimeValue(doc, "none").isEmpty());
+        assertTrue(BsonUtil.zonedDateTimeValue(doc, "null").isEmpty());
     }
 
     @Test
@@ -288,5 +291,10 @@ public class BsonUtilTests {
         assertEquals(Optional.of(uuid), BsonUtil.uuidValue(doc, "uuid"));
         assertTrue(BsonUtil.uuidValue(doc, "none").isEmpty());
         assertTrue(BsonUtil.uuidValue(doc, "null").isEmpty());
+
+        // Test with different representation
+        var uuidLegacy = new BsonBinary(BsonBinarySubType.UUID_LEGACY, UuidHelper.encodeUuidToBinary(uuid, UuidRepresentation.JAVA_LEGACY));
+        var bsonLegacy = new BsonDocument("uuid", uuidLegacy);
+        assertEquals(Optional.of(uuid), BsonUtil.uuidValue(bsonLegacy, "uuid", UuidRepresentation.JAVA_LEGACY));
     }
 }
