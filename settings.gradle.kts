@@ -11,3 +11,4 @@ pluginManagement {
 rootProject.name = "bson-model3"
 include(":bson-model3-bom")
 include(":bson-model3-core")
+include(":bson-model3-generator")
