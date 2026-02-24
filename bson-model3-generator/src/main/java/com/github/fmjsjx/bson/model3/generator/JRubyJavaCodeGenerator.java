@@ -49,8 +49,12 @@ public final class JRubyJavaCodeGenerator implements JavaCodeGenerator {
     @Override
     public void generate(String[] args) {
         var container = new ScriptingContainer();
-        container.setArgv(args);
-        container.runScriptlet(script);
+        try {
+            container.setArgv(args);
+            container.runScriptlet(script);
+        } finally {
+            container.terminate();
+        }
     }
 
 }
