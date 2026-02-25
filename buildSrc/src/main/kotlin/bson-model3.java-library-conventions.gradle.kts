@@ -13,7 +13,7 @@ dependencies {
     // libcommon-bom
     api(platform("com.github.fmjsjx:libcommon-bom:4.1.2"))
     // mongodb-driver-bom
-    api(platform("org.mongodb:mongodb-driver-bom:5.6.3"))
+    api(platform("org.mongodb:mongodb-driver-bom:5.6.4"))
     // log4j2
     implementation(platform("org.apache.logging.log4j:log4j-bom:2.25.3"))
     // junit-bom
