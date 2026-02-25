@@ -6,7 +6,7 @@ plugins {
 dependencies {
 
     api(project(":bson-model3-core"))
-    compileOnly("org.jruby:jruby")
+    implementation("org.jruby:jruby")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
