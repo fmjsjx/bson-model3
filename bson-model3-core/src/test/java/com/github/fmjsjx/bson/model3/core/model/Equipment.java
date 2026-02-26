@@ -25,11 +25,11 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
     public static final String STORE_NAME_DEF = "d";
     public static final String STORE_NAME_HP = "h";
 
-    public static final String FIELD_NAME_ID = "id";
-    public static final String FIELD_NAME_REF_ID = "refId";
-    public static final String FIELD_NAME_ATK = "atk";
-    public static final String FIELD_NAME_DEF = "def";
-    public static final String FIELD_NAME_HP = "hp";
+    public static final String DISPLAY_NAME_ID = "id";
+    public static final String DISPLAY_NAME_REF_ID = "refId";
+    public static final String DISPLAY_NAME_ATK = "atk";
+    public static final String DISPLAY_NAME_DEF = "def";
+    public static final String DISPLAY_NAME_HP = "hp";
 
     public static final int FIELD_INDEX_ID = 0;
     public static final int FIELD_INDEX_REF_ID = 1;
@@ -205,30 +205,30 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_ID)) {
-            data.put(FIELD_NAME_ID, getId());
+            data.put(DISPLAY_NAME_ID, getId());
         }
         if (changedFields.get(FIELD_INDEX_REF_ID)) {
-            data.put(FIELD_NAME_REF_ID, getRefId());
+            data.put(DISPLAY_NAME_REF_ID, getRefId());
         }
         if (changedFields.get(FIELD_INDEX_ATK)) {
-            data.put(FIELD_NAME_ATK, getAtk());
+            data.put(DISPLAY_NAME_ATK, getAtk());
         }
         if (changedFields.get(FIELD_INDEX_DEF)) {
-            data.put(FIELD_NAME_DEF, getDef());
+            data.put(DISPLAY_NAME_DEF, getDef());
         }
         if (changedFields.get(FIELD_INDEX_HP)) {
-            data.put(FIELD_NAME_HP, getHp());
+            data.put(DISPLAY_NAME_HP, getHp());
         }
     }
 
     @Override
     public Map<String, ?> toDisplayData() {
         var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_ID, getId());
-        _displayData.put(FIELD_NAME_REF_ID, getRefId());
-        _displayData.put(FIELD_NAME_ATK, getAtk());
-        _displayData.put(FIELD_NAME_DEF, getDef());
-        _displayData.put(FIELD_NAME_HP, getHp());
+        _displayData.put(DISPLAY_NAME_ID, getId());
+        _displayData.put(DISPLAY_NAME_REF_ID, getRefId());
+        _displayData.put(DISPLAY_NAME_ATK, getAtk());
+        _displayData.put(DISPLAY_NAME_DEF, getDef());
+        _displayData.put(DISPLAY_NAME_HP, getHp());
         return _displayData;
     }
 

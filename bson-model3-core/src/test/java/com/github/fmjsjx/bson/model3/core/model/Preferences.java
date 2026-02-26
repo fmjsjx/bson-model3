@@ -26,9 +26,9 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     public static final String STORE_NAME_FEATURES = "f";
     public static final String STORE_NAME_ATTRIBUTES = "a";
 
-    public static final String FIELD_NAME_CUSTOM = "custom";
-    public static final String FIELD_NAME_FEATURES = "features";
-    public static final String FIELD_NAME_ATTRIBUTES = "attributes";
+    public static final String DISPLAY_NAME_CUSTOM = "custom";
+    public static final String DISPLAY_NAME_FEATURES = "features";
+    public static final String DISPLAY_NAME_ATTRIBUTES = "attributes";
 
     public static final int FIELD_INDEX_CUSTOM = 0;
     public static final int FIELD_INDEX_FEATURES = 1;
@@ -155,19 +155,19 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         if (changedFields.get(FIELD_INDEX_CUSTOM)) {
             var _custom = getCustom();
             if (_custom != null) {
-                data.put(FIELD_NAME_CUSTOM, _custom);
+                data.put(DISPLAY_NAME_CUSTOM, _custom);
             }
         }
         if (changedFields.get(FIELD_INDEX_FEATURES)) {
             var _features = getFeatures();
             if (_features != null) {
-                data.put(FIELD_NAME_FEATURES, _features);
+                data.put(DISPLAY_NAME_FEATURES, _features);
             }
         }
         if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {
             var _attributes = getAttributes().toUpdated();
             if (_attributes != null) {
-                data.put(FIELD_NAME_ATTRIBUTES, _attributes);
+                data.put(DISPLAY_NAME_ATTRIBUTES, _attributes);
             }
         }
     }
@@ -177,13 +177,13 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         var _displayData = new LinkedHashMap<String, Object>();
         var _custom = getCustom();
         if (_custom != null) {
-            _displayData.put(FIELD_NAME_CUSTOM, _custom);
+            _displayData.put(DISPLAY_NAME_CUSTOM, _custom);
         }
         var _features = getFeatures();
         if (_features != null) {
-            _displayData.put(FIELD_NAME_FEATURES, _features);
+            _displayData.put(DISPLAY_NAME_FEATURES, _features);
         }
-        _displayData.put(FIELD_NAME_ATTRIBUTES, getAttributes().toDisplayData());
+        _displayData.put(DISPLAY_NAME_ATTRIBUTES, getAttributes().toDisplayData());
         return _displayData;
     }
 
@@ -257,15 +257,15 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     protected void appendDeletedData(Map<String, ? super Object> data) {
         var changedFields = this.changedFields;
         if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() == null) {
-            data.put(FIELD_NAME_CUSTOM, BsonModelConstants.DELETED_VALUE);
+            data.put(DISPLAY_NAME_CUSTOM, BsonModelConstants.DELETED_VALUE);
         }
         if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() == null) {
-            data.put(FIELD_NAME_FEATURES, BsonModelConstants.DELETED_VALUE);
+            data.put(DISPLAY_NAME_FEATURES, BsonModelConstants.DELETED_VALUE);
         }
         if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {
             var _attributes = getAttributes().toDeleted();
             if (_attributes != null) {
-                data.put(FIELD_NAME_ATTRIBUTES, _attributes);
+                data.put(DISPLAY_NAME_ATTRIBUTES, _attributes);
             }
         }
     }

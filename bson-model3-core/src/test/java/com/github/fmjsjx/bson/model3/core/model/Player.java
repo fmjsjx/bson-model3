@@ -31,13 +31,13 @@ public final class Player extends AbstractRootModel<Player> {
     public static final String STORE_NAME_UPDATED_VERSION = "_uv";
     public static final String STORE_NAME_UPDATED_TIME = "_ut";
 
-    public static final String FIELD_NAME_ID = "id";
-    public static final String FIELD_NAME_BASIC_INFO = "basicInfo";
-    public static final String FIELD_NAME_PREFERENCES = "preferences";
-    public static final String FIELD_NAME_WALLET = "wallet";
-    public static final String FIELD_NAME_EQUIPMENTS = "equipments";
-    public static final String FIELD_NAME_ITEMS = "items";
-    public static final String FIELD_NAME_UPDATED_AT = "updatedAt";
+    public static final String DISPLAY_NAME_ID = "uid";
+    public static final String DISPLAY_NAME_BASIC_INFO = "basicInfo";
+    public static final String DISPLAY_NAME_PREFERENCES = "preferences";
+    public static final String DISPLAY_NAME_WALLET = "wallet";
+    public static final String DISPLAY_NAME_EQUIPMENTS = "equipments";
+    public static final String DISPLAY_NAME_ITEMS = "items";
+    public static final String DISPLAY_NAME_UPDATED_AT = "updatedAt";
 
     public static final int FIELD_INDEX_ID = 0;
     public static final int FIELD_INDEX_BASIC_INFO = 1;
@@ -298,42 +298,42 @@ public final class Player extends AbstractRootModel<Player> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_ID)) {
-            data.put(FIELD_NAME_ID, getId());
+            data.put(DISPLAY_NAME_ID, getId());
         }
         if (changedFields.get(FIELD_INDEX_BASIC_INFO)) {
             var _basicInfo = getBasicInfo().toUpdated();
             if (_basicInfo != null) {
-                data.put(FIELD_NAME_BASIC_INFO, _basicInfo);
+                data.put(DISPLAY_NAME_BASIC_INFO, _basicInfo);
             }
         }
         if (changedFields.get(FIELD_INDEX_PREFERENCES)) {
             var _preferences = getPreferences().toUpdated();
             if (_preferences != null) {
-                data.put(FIELD_NAME_PREFERENCES, _preferences);
+                data.put(DISPLAY_NAME_PREFERENCES, _preferences);
             }
         }
         if (changedFields.get(FIELD_INDEX_WALLET)) {
             var _wallet = getWallet().toUpdated();
             if (_wallet != null) {
-                data.put(FIELD_NAME_WALLET, _wallet);
+                data.put(DISPLAY_NAME_WALLET, _wallet);
             }
         }
         if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
             var _equipments = getEquipments().toUpdated();
             if (_equipments != null) {
-                data.put(FIELD_NAME_EQUIPMENTS, _equipments);
+                data.put(DISPLAY_NAME_EQUIPMENTS, _equipments);
             }
         }
         if (changedFields.get(FIELD_INDEX_ITEMS)) {
             var _items = getItems().toUpdated();
             if (_items != null) {
-                data.put(FIELD_NAME_ITEMS, _items);
+                data.put(DISPLAY_NAME_ITEMS, _items);
             }
         }
         if (changedFields.get(FIELD_INDEX_UPDATED_AT)) {
             var _updatedAt = getUpdatedAt();
             if (_updatedAt != null) {
-                data.put(FIELD_NAME_UPDATED_AT, _updatedAt);
+                data.put(DISPLAY_NAME_UPDATED_AT, _updatedAt);
             }
         }
     }
@@ -341,15 +341,15 @@ public final class Player extends AbstractRootModel<Player> {
     @Override
     public Map<String, ?> toDisplayData() {
         var _displayData = new LinkedHashMap<String, Object>();
-        _displayData.put(FIELD_NAME_ID, getId());
-        _displayData.put(FIELD_NAME_BASIC_INFO, getBasicInfo().toDisplayData());
-        _displayData.put(FIELD_NAME_PREFERENCES, getPreferences().toDisplayData());
-        _displayData.put(FIELD_NAME_WALLET, getWallet().toDisplayData());
-        _displayData.put(FIELD_NAME_EQUIPMENTS, getEquipments().toDisplayData());
-        _displayData.put(FIELD_NAME_ITEMS, getItems().toDisplayData());
+        _displayData.put(DISPLAY_NAME_ID, getId());
+        _displayData.put(DISPLAY_NAME_BASIC_INFO, getBasicInfo().toDisplayData());
+        _displayData.put(DISPLAY_NAME_PREFERENCES, getPreferences().toDisplayData());
+        _displayData.put(DISPLAY_NAME_WALLET, getWallet().toDisplayData());
+        _displayData.put(DISPLAY_NAME_EQUIPMENTS, getEquipments().toDisplayData());
+        _displayData.put(DISPLAY_NAME_ITEMS, getItems().toDisplayData());
         var _updatedAt = getUpdatedAt();
         if (_updatedAt != null) {
-            _displayData.put(FIELD_NAME_UPDATED_AT, _updatedAt);
+            _displayData.put(DISPLAY_NAME_UPDATED_AT, _updatedAt);
         }
         return _displayData;
     }
@@ -461,29 +461,29 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.get(FIELD_INDEX_BASIC_INFO)) {
             var _basicInfo = getBasicInfo().toDeleted();
             if (_basicInfo != null) {
-                data.put(FIELD_NAME_BASIC_INFO, _basicInfo);
+                data.put(DISPLAY_NAME_BASIC_INFO, _basicInfo);
             }
         }
         if (changedFields.get(FIELD_INDEX_PREFERENCES)) {
             var _preferences = getPreferences().toDeleted();
             if (_preferences != null) {
-                data.put(FIELD_NAME_PREFERENCES, _preferences);
+                data.put(DISPLAY_NAME_PREFERENCES, _preferences);
             }
         }
         if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
             var _equipments = getEquipments().toDeleted();
             if (_equipments != null) {
-                data.put(FIELD_NAME_EQUIPMENTS, _equipments);
+                data.put(DISPLAY_NAME_EQUIPMENTS, _equipments);
             }
         }
         if (changedFields.get(FIELD_INDEX_ITEMS)) {
             var _items = getItems().toDeleted();
             if (_items != null) {
-                data.put(FIELD_NAME_ITEMS, _items);
+                data.put(DISPLAY_NAME_ITEMS, _items);
             }
         }
         if (changedFields.get(FIELD_INDEX_UPDATED_AT) && getUpdatedAt() == null) {
-            data.put(FIELD_NAME_UPDATED_AT, BsonModelConstants.DELETED_VALUE);
+            data.put(DISPLAY_NAME_UPDATED_AT, BsonModelConstants.DELETED_VALUE);
         }
     }
 
