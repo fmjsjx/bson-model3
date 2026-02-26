@@ -22,6 +22,11 @@ import java.util.Objects;
 @NullMarked
 public final class Player extends AbstractRootModel<Player> {
 
+    public static final int ONLINE = 1;
+    public static final int OFFLINE = 0;
+    public static final String ROLE_GM = "GM";
+    public static final LocalDateTime DOOMSDAY = LocalDateTime.of(2038, 9, 7, 11, 38, 59);
+
     public static final String STORE_NAME_ID = "_id";
     public static final String STORE_NAME_BASIC_INFO = "bi";
     public static final String STORE_NAME_PREFERENCES = "p";

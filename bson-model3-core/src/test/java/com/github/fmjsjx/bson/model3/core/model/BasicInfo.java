@@ -148,7 +148,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     public long getCreatedAt() {
-        return DateTimeUtil.toEpochMilli(createdTime);
+        return DateTimeUtil.toEpochMilli(getCreatedTime());
     }
 
     @Override

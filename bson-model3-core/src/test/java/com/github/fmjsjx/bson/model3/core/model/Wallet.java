@@ -93,7 +93,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     private long diamondConsumed;
 
     public long getCoin() {
-        return coinTotal - coinConsumed;
+        return getCoinTotal() - getCoinConsumed();
     }
 
     public long getCoinTotal() {
@@ -119,7 +119,7 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     }
 
     public long getDiamond() {
-        return diamondTotal - diamondConsumed;
+        return getDiamondTotal() - getDiamondConsumed();
     }
 
     public long getDiamondTotal() {
