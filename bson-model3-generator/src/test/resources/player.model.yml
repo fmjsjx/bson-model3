@@ -1,0 +1,118 @@
+java-package: com.github.fmjsjx.bson.model3.generator.model
+
+models:
+  - name: Player
+    type: root
+    consts:
+      - name: ONLINE
+        type: int
+        value: '1'
+      - name: OFFLINE
+        type: int
+        value: '0'
+      - name: ROLE_GM
+        type: string
+        value: GM
+      - name: DOOMSDAY
+        type: datetime
+        value: LocalDateTime.of(2038, 9, 7, 11, 38, 59)
+    fields:
+      - name: id _id uid
+        type: long required
+      - name: basicInfo bi
+        type: object required
+        model: BasicInfo
+      - name: preferences p
+        type: object required
+        model: Preferences
+      - name: wallet w
+        type: object required
+        model: Wallet
+      - name: equipments e
+        type: map required
+        key: string
+        value: object
+        model: Equipment
+      - name: items i
+        type: map required
+        key: int
+        value: int
+      - name: updateVersion _uv
+        type: int required increment-1 hidden
+      - name: updatedTime _ut
+        type: datetime hidden
+      - name: updatedAt
+        type: long virtual
+        sources:
+          - updatedTime
+        imports:
+          - com.github.fmjsjx.libcommon.util.DateTimeUtil
+        block: |-
+          var _updatedTime = getUpdatedTime();
+          return _updatedTime == null ? null : DateTimeUtil.toEpochMilli(_updatedTime);
+  - name: BasicInfo
+    type: object
+    fields:
+      - name: name n
+        type: string required
+      - name: avatar a
+        type: string
+      - name: birthday b
+        type: date
+      - name: createdTime ct
+        type: datetime required hidden
+      - name: createdAt
+        type: long virtual
+        sources:
+          - createdTime
+        imports:
+          - com.github.fmjsjx.libcommon.util.DateTimeUtil
+        expression: DateTimeUtil.toEpochMilli(getCreatedTime());
+  - name: Preferences
+    type: object
+    fields:
+      - name: custom c
+        type: string
+      - name: features f
+        type: std-list
+        value: string
+      - name: attributes a
+        type: map required
+        key: string
+        value: string
+  - name: Wallet
+    type: object
+    fields:
+      - name: coin
+        type: long required virtual
+        sources:
+          - coinTotal
+          - coinConsumed
+        expression: getCoinTotal() - getCoinConsumed();
+      - name: coinTotal ct
+        type: long required
+      - name: coinConsumed cc
+        type: long required hidden
+      - name: diamond
+        type: long required virtual
+        sources:
+          - diamondTotal
+          - diamondConsumed
+        expression: getDiamondTotal() - getDiamondConsumed();
+      - name: diamondTotal dt
+        type: long required
+      - name: diamondConsumed dc
+        type: long required hidden
+  - name: Equipment
+    type: object
+    fields:
+      - name: id i
+        type: string required
+      - name: refId ri
+        type: int required
+      - name: atk a
+        type: int required
+      - name: def d
+        type: int required
+      - name: hp h
+        type: int required
