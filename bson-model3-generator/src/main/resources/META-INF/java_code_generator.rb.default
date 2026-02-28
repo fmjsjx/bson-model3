@@ -1,1 +1,309 @@
-# TODO
+#!/usr/bin/env ruby
+
+
+class ConstConf
+
+  class << self
+    def from(config)
+      name = config['name']
+      type = config['type']
+      value = config['value']
+      new(name, type, value)
+    end
+  end
+
+  attr_reader :name, :type, :value
+
+  def initialize(name, type, value)
+    if name.nil?
+      raise ArgumentError, 'name is required on const'
+    else
+      @name = name.to_s
+    end
+    if type.nil?
+      raise ArgumentError, 'type is required on const'
+    else
+      @type = type.to_s
+    end
+    if value.nil?
+      raise ArgumentError, 'value is required on const'
+    else
+      @value = value.to_s
+    end
+  end
+
+end
+
+class FieldConf
+
+  class << self
+    def from(config, index)
+      name = config['name']
+      type = config['type']
+      default = config['default']
+      model = config['model']
+      key = config['key']
+      value = config['value']
+      sources = config['sources']
+      imports = config['imports']
+      block = config['block']
+      expression = config['expression']
+      new(index, name, type, default, model, key, value, sources, imports, block, expression)
+    end
+  end
+
+  attr_reader :index,
+              :name,
+              :store_name,
+              :display_name,
+              :type,
+              :default,
+              :model,
+              :key,
+              :value,
+              :sources,
+              :imports,
+              :block,
+              :expression
+
+  def initialize(index, name, type, default, model, key, value, sources, imports, block, expression)
+    if index.nil?
+      raise ArgumentError, 'index is required on field'
+    end
+    @index = index
+    @name, @store_name, @display_name = parse_names(name)
+    @type, @required, @virtual, @hidden, @readonly, @transient, @increment_1 = parse_type_and_modifiers(type)
+    @default = default.to_s unless default.nil?
+    @model = model.to_s unless model.nil?
+    @key = key.to_s unless key.nil?
+    @value = value.to_s unless value.nil?
+    @sources = parse_sources(sources)
+    @imports = parse_imports(imports)
+    @block = block.to_s unless block.nil?
+    @expression = expression.to_s unless expression.nil?
+  end
+
+  def required?
+    @required
+  end
+
+  def virtual?
+    @virtual
+  end
+
+  def hidden?
+    @hidden
+  end
+
+  def readonly?
+    @readonly
+  end
+
+  def transient?
+    @transient
+  end
+
+  def increment_1?
+    @increment_1
+  end
+
+  private
+  def parse_names(name_value)
+    if name_value.nil?
+      raise ArgumentError, 'name is required on field'
+    end
+    name, store_name, display_name = name_value.to_s.split(/\s+/)
+    if store_name.nil?
+      store_name = name
+    end
+    if display_name.nil?
+      display_name = name
+    end
+    [name, store_name, display_name]
+  end
+
+  def parse_type_and_modifiers(type_and_modifiers)
+    if type_and_modifiers.nil?
+      raise ArgumentError, 'type is required on field'
+    end
+    modifiers = type_and_modifiers.to_s.split(/\s+/)
+    type = modifiers[0]
+    # modifiers default values
+    required = false
+    virtual = false
+    hidden = false
+    readonly = false
+    transient = false
+    increment_1 = false
+    modifiers[1..].each do |modifier|
+      case modifier
+      when 'required'
+        required = true
+      when 'virtual'
+        virtual = true
+      when 'hidden'
+        hidden = true
+      when 'readonly'
+        readonly = true
+      when 'transient'
+        transient = true
+      when 'increment-1'
+        increment_1 = true
+      end
+    end
+    [type, required, virtual, hidden, readonly, transient, increment_1]
+  end
+
+  def parse_sources(sources)
+    parse_string_array(sources, 'sources')
+  end
+
+  def parse_string_array(array, name)
+    if array.nil?
+      return []
+    end
+    unless array.is_a?(Array)
+      raise ArgumentError, "#{name} must be an array on field"
+    end
+    array.map { |item| item.to_s }
+  end
+
+  def parse_imports(imports)
+    parse_string_array(imports, 'imports')
+  end
+
+end
+
+
+class ModelConf
+
+  class << self
+    def from(config, package)
+      name = config['name']
+      type = config['type']
+      if config.key?('consts')
+        consts = config['consts']
+        unless consts.is_a?(Array)
+          raise ArgumentError, 'consts must be an array on model'
+        end
+        consts = consts.map { |const| ConstConf.from(const) }
+      end
+      if config.key?('fields')
+        fields = config['fields']
+        unless fields.is_a?(Array)
+          raise ArgumentError, 'fields must be an array on model'
+        end
+        fields = fields.map.with_index { |field, index| FieldConf.from(field, index) }
+      end
+      new(package, name, type, consts, fields)
+    end
+  end
+
+  attr_reader :package, :name, :type, :consts, :fields
+
+  def initialize(package, name, type, consts, fields)
+    if package.nil?
+      raise ArgumentError, 'package is required on model'
+    else
+      @package = package.to_s
+    end
+    if name.nil?
+      raise ArgumentError, 'name is required on model'
+    else
+      @name = name.to_s
+    end
+    if type.nil?
+      raise ArgumentError, 'type is required on model'
+    else
+      @type = type.to_s
+    end
+    if consts.nil?
+      @consts = []
+    else
+      unless consts.is_a?(Array)
+        raise ArgumentError, 'consts must be an array on model'
+      end
+      @consts = consts
+    end
+    if fields.nil?
+      @fields = []
+    else
+      unless fields.is_a?(Array)
+        raise ArgumentError, 'fields must be an array on model'
+      end
+      @fields = fields
+    end
+  end
+
+end
+
+
+class Configurations
+
+  class << self
+    def from(config)
+      if config.key?('java-package')
+        package = config['java-package']
+      else
+        package = config['package']
+      end
+      if config.key?('models')
+        models = config['models']
+        unless models.is_a?(Array)
+          raise ArgumentError, 'models must be an array'
+        end
+        models = models.map { |model| ModelConf.from(model, package) }
+      else
+        models = []
+      end
+      new(package, models)
+    end
+  end
+
+  attr_reader :package, :models
+
+  def initialize(package, models)
+    if package.nil?
+      raise ArgumentError, 'package is required'
+    else
+      package = package.to_s
+    end
+    @package = package
+    if models.nil?
+      raise ArgumentError, 'models is required'
+    else
+      unless models.is_a?(Array)
+        raise ArgumentError, 'models must be an array'
+      end
+      @models = models
+    end
+  end
+
+end
+
+
+require 'yaml'
+
+config = Configurations.from(YAML.load_file(ARGV[0]))
+
+puts "package: #{config.package}"
+puts ""
+
+config.models.each do |model|
+  puts "------------------------------------------"
+  puts "model.package: #{model.package}"
+  puts "model.name: #{model.name}"
+  puts "model.type: #{model.type}"
+  puts "model.consts:"
+  model.consts.each do |const|
+    puts "  #{const.name}: #{const.type} = #{const.value}"
+  end
+  puts "model.fields:"
+  model.fields.each do |field|
+    puts "  #{field.index} - #{field.name}, #{field.store_name}, #{field.display_name}: #{field.type}  ==> #{field.instance_variables.filter { |var| not %w[@index @name @store_name @display_name @type].include?(var.to_s) }.map { |var| "#{var}=#{field.instance_variable_get(var)}" }.join(', ')}"
+  end
+end
+
+puts ""
+
+puts "Done."
