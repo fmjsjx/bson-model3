@@ -71,6 +71,14 @@ class FieldConf
     @increment_1
   end
 
+  # Returns whether the field should be stored in MongoDB
+  #
+  # @return [Boolean] true if the field should be stored in MongoDB,
+  #         false otherwise
+  def store_field?
+    not virtual? and not readonly? and not transient?
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?

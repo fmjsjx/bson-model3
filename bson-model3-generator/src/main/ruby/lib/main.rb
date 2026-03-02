@@ -24,6 +24,10 @@ config.models.each do |model|
     puts "  #{field.index} - #{field.name}, #{field.store_name}, #{field.display_name}: #{field.type}  ==> #{field.instance_variables.filter { |var| not %w[@index @name @store_name @display_name @type].include?(var.to_s) }.map { |var| "#{var}=#{field.instance_variable_get(var)}" }.join(', ')}"
   end
 end
+puts "==============================================="
+puts ""
+generator = Generator.new(config, ARGV[1])
+generator.generate
 
 puts ""
 

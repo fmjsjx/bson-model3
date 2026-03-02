@@ -107,6 +107,14 @@ class FieldConf
     @increment_1
   end
 
+  # Returns whether the field should be stored in MongoDB
+  #
+  # @return [Boolean] true if the field should be stored in MongoDB,
+  #         false otherwise
+  def store_field?
+    not virtual? and not readonly? and not transient?
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?
@@ -281,6 +289,200 @@ class Configurations
 
 end
 
+class ImportsGenerator
+
+  attr_reader :config,
+              :model_conf,
+              :imports
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @imports = []
+  end
+
+  def generate
+    if @imports.empty?
+      @imports = init_imports
+    end
+    code = ''
+    @imports.each do |import|
+      if import.empty?
+        code << "\n"
+      else
+        code << "import #{import};\n"
+      end
+    end
+    code
+  end
+
+  private
+  def init_imports
+    imports_javax = []
+    imports_java = ['java.util.*']
+    imports_other = ['com.alibaba.fastjson2.annotation.JSONType',
+                     'com.github.fmjsjx.bson.model3.core.*',
+                     'com.github.fmjsjx.bson.model3.core.util.*',
+                     'org.bson.*',
+                     'org.bson.conversions.Bson',
+                     'org.jspecify.annotations.NullMarked',
+                     'org.jspecify.annotations.Nullable']
+    consts = @model_conf.consts
+    fields = @model_conf.fields
+    unless fields.filter { |field| field.store_field? }.empty?
+      imports_other << 'com.mongodb.client.model.Updates'
+    end
+    if consts.any? { |const| const.type == 'datetime' }
+      imports_java << 'java.time.LocalDateTime'
+    end
+    if consts.any? { |const| const.type == 'date' }
+      imports_java << 'java.time.LocalDate'
+    end
+    if consts.any? { |const| const.type == 'time' }
+      imports_java << 'java.time.LocalTime'
+    end
+    if fields.any? { |field| field.type == 'datetime' or (field.type == 'std-list' and field.value == 'datetime') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalDateTime'
+    end
+    if fields.any? { |field| field.type == 'date' or (field.type == 'std-list' and field.value == 'date') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalDate'
+    end
+    if fields.any? { |field| field.type == 'time' or (field.type == 'std-list' and field.value == 'time') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalTime'
+    end
+    if fields.any? { |field| field.type == 'object-id' }
+      imports_other << 'org.bson.types.ObjectId'
+    end
+    fields.filter { |field| field.virtual? }.each do |field|
+      field.imports.each do |import|
+        if import.start_with?('javax.')
+          imports_javax << import
+        elsif import.start_with?('java.')
+          unless /^java\.util\.[^\.]+$/.match?(import)
+            imports_java << import
+          end
+        else
+          patterns = [/^com\.github\.fmjsjx\.bson\.model3\.core\.[^\.]+$/,
+                      /^com\.github\.fmjsjx\.bson\.model3\.core\.util\.[^\.]+$/,
+                      /^org\.bson\.[^\.]+$/]
+          if patterns.none? { |pattern| pattern.match?(import) }
+            imports_other << import
+          end
+        end
+      end
+    end
+    imports = imports_other.uniq.sort
+    imports << ''
+    imports += imports_javax.uniq.sort
+    imports += imports_java.uniq.sort
+  end
+
+end
+
+
+class ModelGenerator
+
+  attr_reader :config,
+              :model_conf,
+              :imports_generator
+  
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @imports_generator = ImportsGenerator.new(@config, @model_conf)
+    
+  end
+
+  def generate
+    code = generate_class_prefix_code
+    # TODO generate class content
+    code << generate_class_suffix_code
+  end
+
+  private
+  def generate_class_prefix_code
+    code = generate_package_code
+    code << "\n"
+    code << generate_imports_code
+    code << "\n"
+    code << generate_class_declaration_code
+  end
+
+  def generate_package_code
+    "package #{@config.package};\n"
+  end
+
+  def generate_imports_code
+    @imports_generator.generate
+  end
+
+  def generate_class_declaration_code
+    "public class #{@model_conf.name} extends #{generic_super_type} {\n"
+  end
+
+  def generic_super_type
+    case @model_conf.type
+    when 'object'
+      "AbstractObjectModel<#{@model_conf.name}>"
+    when 'root'
+      "AbstractRootModel<#{@model_conf.name}>"
+    else
+      raise ArgumentError, "Unknown model type: #{@model_conf.type}"
+    end
+  end
+
+  def generate_class_suffix_code
+    "}\n"
+  end
+
+end
+
+require 'fileutils'
+
+class Generator
+
+  attr_reader :config, :out_dir
+
+  def initialize(config, out_dir)
+    @config = config
+    @out_dir = out_dir
+  end
+
+  def generate
+    package_dir = generate_package_dir
+    generated_contents = @config.models.map do |model_conf|
+      puts "Generating model: #{model_conf.package}.#{model_conf.name}..."
+      content = ModelGenerator.new(@config, model_conf).generate
+      puts "OK"
+      [model_conf, content]
+    end
+    generated_contents.each do |model_conf, content|
+      file_path = File.join(package_dir, "#{model_conf.name}.java")
+      puts "Saving model: #{model_conf.package}.#{model_conf.name} => #{file_path}..."
+      puts "------------------------------------------------------"
+      puts content
+      puts "======================================================"
+      # TODO: fix me
+      #File.write(file_path, content)
+      puts "OK"
+    end
+  end
+
+  private
+  def generate_package_dir
+    package_dir = File.join(@out_dir, File.join(config.package.split('.')))
+    unless File.directory?(package_dir)
+      puts "Creating package directory: #{@config.package} => #{package_dir}..."
+      FileUtils.mkdir_p(package_dir)
+      puts "OK"
+    end
+    package_dir
+  end
+
+end
 
 require 'yaml'
 
@@ -303,6 +505,10 @@ config.models.each do |model|
     puts "  #{field.index} - #{field.name}, #{field.store_name}, #{field.display_name}: #{field.type}  ==> #{field.instance_variables.filter { |var| not %w[@index @name @store_name @display_name @type].include?(var.to_s) }.map { |var| "#{var}=#{field.instance_variable_get(var)}" }.join(', ')}"
   end
 end
+puts "==============================================="
+puts ""
+generator = Generator.new(config, ARGV[1])
+generator.generate
 
 puts ""
 
