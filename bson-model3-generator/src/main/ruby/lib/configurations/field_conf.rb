@@ -79,6 +79,67 @@ class FieldConf
     not virtual? and not readonly? and not transient?
   end
 
+  # Returns whether the field should be displayed
+  #
+  # @return [Boolean] true if the field should be displayed,
+  #         false otherwise
+  def display_field?
+    not hidden?
+  end
+
+  # Returns the field name in screaming snake case
+  #
+  # @return [String] the field name in screaming snake case
+  def screaming_snake_case_name
+    @name.gsub(/[A-Z]/) { |match| "_#{match}" }.upcase
+  end
+
+  # Returns the name of the store name const of the field
+  #
+  # @return [String] the name of the store name const of the field
+  def store_name_const_name
+    "STORE_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the display name const of the field
+  #
+  # @return [String] the name of the display name const of the field
+  def display_name_const_name
+    "DISPLAY_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the field index const of the field
+  #
+  # @return [String] the name of the field index const of the field
+  def field_index_const_name
+    "FIELD_INDEX_#{screaming_snake_case_name}"
+  end
+
+  # Returns the getter method name of the field
+  #
+  # @return [String] the getter method name of the field
+  def getter_name
+    if @type == 'boolean' and required?
+      "is#{camel_case_name}"
+    else
+      "get#{camel_case_name}"
+    end
+  end
+
+  # Returns the setter method name of the field
+  #
+  # @return [String] the setter method name of the field
+  def setter_name
+    "set#{camel_case_name}"
+  end
+
+  # Returns the field name in camel case
+  #
+  # @return [String] the field name in camel case
+  def camel_case_name
+    @name[0].upcase << @name[1..]
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?

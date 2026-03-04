@@ -21,6 +21,7 @@ class Generator
     generated_contents.each do |model_conf, content|
       file_path = File.join(package_dir, "#{model_conf.name}.java")
       puts "Saving model: #{model_conf.package}.#{model_conf.name} => #{file_path}..."
+      # TODO: fix me
       puts "------------------------------------------------------"
       puts content
       puts "======================================================"

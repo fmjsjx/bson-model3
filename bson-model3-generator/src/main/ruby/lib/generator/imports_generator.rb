@@ -1,8 +1,6 @@
 class ImportsGenerator
 
-  attr_reader :config,
-              :model_conf,
-              :imports
+  attr_reader :config, :model_conf, :imports
 
   def initialize(config, model_conf)
     @config = config
@@ -61,6 +59,9 @@ class ImportsGenerator
     if fields.any? { |field| field.type == 'time' or (field.type == 'std-list' and field.value == 'time') }
       imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
       imports_java << 'java.time.LocalTime'
+    end
+    if fields.any? { |field| field.type == 'decimal' or (field.type == 'std-list' and field.value == 'decimal') or (field.type == 'map' and field.value == 'decimal') }
+      imports_java << 'java.math.BigDecimal'
     end
     if fields.any? { |field| field.type == 'object-id' }
       imports_other << 'org.bson.types.ObjectId'

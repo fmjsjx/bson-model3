@@ -1,4 +1,7 @@
 require_relative 'imports_generator'
+require_relative 'consts_generator'
+require_relative 'store_data'
+
 
 class ModelGenerator
 
@@ -10,11 +13,13 @@ class ModelGenerator
     @config = config
     @model_conf = model_conf
     @imports_generator = ImportsGenerator.new(@config, @model_conf)
-    
+    @consts_generator = ConstsGenerator.new(@config, @model_conf)
   end
 
   def generate
     code = generate_class_prefix_code
+    code << generate_consts_code
+    code << generate_store_data_class
     # TODO generate class content
     code << generate_class_suffix_code
   end
@@ -37,7 +42,8 @@ class ModelGenerator
   end
 
   def generate_class_declaration_code
-    "public class #{@model_conf.name} extends #{generic_super_type} {\n"
+    code = "@NullMarked\n"
+    code << "public final class #{@model_conf.name} extends #{generic_super_type} {\n"
   end
 
   def generic_super_type
@@ -49,6 +55,14 @@ class ModelGenerator
     else
       raise ArgumentError, "Unknown model type: #{@model_conf.type}"
     end
+  end
+
+  def generate_consts_code
+    @consts_generator.generate
+  end
+
+  def generate_store_data_class
+    StoreData::generate_class_code(@config, @model_conf)
   end
 
   def generate_class_suffix_code

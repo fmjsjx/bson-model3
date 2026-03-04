@@ -1,5 +1,10 @@
 java-package: com.github.fmjsjx.bson.model3.generator.model
 
+json-libs:
+  - Jackson
+  - Fastjson2
+  - Jsoniter
+
 models:
   - name: Player
     type: root
@@ -37,7 +42,7 @@ models:
         type: map required
         key: int
         value: int
-      - name: updateVersion _uv
+      - name: updatedVersion _uv
         type: int required increment-1 hidden
       - name: updatedTime _ut
         type: datetime hidden

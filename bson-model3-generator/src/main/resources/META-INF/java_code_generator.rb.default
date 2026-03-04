@@ -115,6 +115,67 @@ class FieldConf
     not virtual? and not readonly? and not transient?
   end
 
+  # Returns whether the field should be displayed
+  #
+  # @return [Boolean] true if the field should be displayed,
+  #         false otherwise
+  def display_field?
+    not hidden?
+  end
+
+  # Returns the field name in screaming snake case
+  #
+  # @return [String] the field name in screaming snake case
+  def screaming_snake_case_name
+    @name.gsub(/[A-Z]/) { |match| "_#{match}" }.upcase
+  end
+
+  # Returns the name of the store name const of the field
+  #
+  # @return [String] the name of the store name const of the field
+  def store_name_const_name
+    "STORE_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the display name const of the field
+  #
+  # @return [String] the name of the display name const of the field
+  def display_name_const_name
+    "DISPLAY_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the field index const of the field
+  #
+  # @return [String] the name of the field index const of the field
+  def field_index_const_name
+    "FIELD_INDEX_#{screaming_snake_case_name}"
+  end
+
+  # Returns the getter method name of the field
+  #
+  # @return [String] the getter method name of the field
+  def getter_name
+    if @type == 'boolean' and required?
+      "is#{camel_case_name}"
+    else
+      "get#{camel_case_name}"
+    end
+  end
+
+  # Returns the setter method name of the field
+  #
+  # @return [String] the setter method name of the field
+  def setter_name
+    "set#{camel_case_name}"
+  end
+
+  # Returns the field name in camel case
+  #
+  # @return [String] the field name in camel case
+  def camel_case_name
+    @name[0].upcase << @name[1..]
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?
@@ -255,6 +316,17 @@ class Configurations
       else
         package = config['package']
       end
+      if config.key?('json-libs')
+        json_libs = config['json-libs']
+        unless json_libs.is_a?(Array)
+          raise ArgumentError, 'json-libs must be an array'
+        end
+        if json_libs.empty?
+          json_libs = ['Jackson']
+        end
+      else
+        json_libs = ['Jackson']
+      end
       if config.key?('models')
         models = config['models']
         unless models.is_a?(Array)
@@ -264,19 +336,27 @@ class Configurations
       else
         models = []
       end
-      new(package, models)
+      new(package, json_libs, models)
     end
   end
 
-  attr_reader :package, :models
+  attr_reader :package, :json_libs, :models
 
-  def initialize(package, models)
+  def initialize(package, json_libs, models)
     if package.nil?
       raise ArgumentError, 'package is required'
     else
       package = package.to_s
     end
     @package = package
+    if json_libs.nil?
+      raise ArgumentError, 'json-libs is required'
+    else
+      unless json_libs.is_a?(Array)
+        raise ArgumentError, 'json-libs must be an array'
+      end
+      @json_libs = json_libs
+    end
     if models.nil?
       raise ArgumentError, 'models is required'
     else
@@ -291,9 +371,7 @@ end
 
 class ImportsGenerator
 
-  attr_reader :config,
-              :model_conf,
-              :imports
+  attr_reader :config, :model_conf, :imports
 
   def initialize(config, model_conf)
     @config = config
@@ -353,6 +431,9 @@ class ImportsGenerator
       imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
       imports_java << 'java.time.LocalTime'
     end
+    if fields.any? { |field| field.type == 'decimal' or (field.type == 'std-list' and field.value == 'decimal') or (field.type == 'map' and field.value == 'decimal') }
+      imports_java << 'java.math.BigDecimal'
+    end
     if fields.any? { |field| field.type == 'object-id' }
       imports_other << 'org.bson.types.ObjectId'
     end
@@ -382,6 +463,451 @@ class ImportsGenerator
 
 end
 
+class ConstGenerator
+
+  attr_reader :model_conf, :const_conf
+
+  def initialize(model_conf, const_conf)
+    @model_conf = model_conf
+    @const_conf = const_conf
+  end
+
+  def generate
+    name = @const_conf.name
+    type, type_1 = @const_conf.type.split(/\s+/)
+    value = @const_conf.value
+    case type
+    when 'int', 'long', 'double', 'boolean'
+      "    public static final #{type} #{name} = #{value};\n"
+    when 'string'
+      "    public static final String #{name} = \"#{value}\";\n"
+    when 'date'
+      "    public static final LocalDate #{name} = #{value};\n"
+    when 'time'
+      "    public static final LocalTime #{name} = #{value};\n"
+    when 'datetime'
+      "    public static final LocalDateTime #{name} = #{value};\n"
+    when 'list'
+      if type_1.nil?
+        raise ArgumentError, "Missing value type for const type list"
+      end
+      case type_1
+      when 'int'
+        "    public static final List<Integer> #{name} = #{value};\n"
+      when 'long'
+        "    public static final List<Long> #{name} = #{value};\n"
+      when 'double'
+        "    public static final List<Double> #{name} = #{value};\n"
+      when 'string'
+        "    public static final List<String> #{name} = #{value};\n"
+      else
+        raise ArgumentError, "Unsupported value type #{type_1} for const type list"
+      end
+    when 'set'
+      if type_1.nil?
+        raise ArgumentError, "Missing value type for const type set"
+      end
+      case type_1
+      when 'int'
+        "    public static final Set<Integer> #{name} = #{value};\n"
+      when 'long'
+        "    public static final Set<Long> #{name} = #{value};\n"
+      when 'double'
+        "    public static final Set<Double> #{name} = #{value};\n"
+      when 'string'
+        "    public static final Set<String> #{name} = #{value};\n"
+      else
+        raise ArgumentError, "Unsupported value type #{type_1} for const type set"
+      end
+    else
+      raise ArgumentError, "Unsupported const type #{type}"
+    end
+  end
+
+end
+
+
+class ConstsGenerator
+  attr_reader :config, :model_conf
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+  end
+
+  def generate
+    code = ''
+    code << generate_configured_consts
+    code << generate_store_names
+    code << generate_display_names
+    code << generate_field_indices
+  end
+
+  private
+  def generate_configured_consts
+    code = ''
+    consts = @model_conf.consts
+    unless consts.empty?
+      code << "\n"
+      consts.each do |const|
+        code << ConstGenerator.new(@model_conf, const).generate
+      end
+    end
+    code
+  end
+
+  def generate_store_names
+    code = ''
+    fields = @model_conf.fields.filter { |field| field.store_field? }
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final String #{field.store_name_const_name} = \"#{field.store_name}\";\n"
+      end
+    end
+    code
+  end
+
+  def generate_display_names
+    code = ''
+    fields = @model_conf.fields.filter { |field| field.display_field? }
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final String #{field.display_name_const_name} = \"#{field.display_name}\";\n"
+      end
+    end
+    code
+  end
+
+  def generate_field_indices
+    code = ''
+    fields = @model_conf.fields
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final int #{field.field_index_const_name} = #{field.index};\n"
+      end
+    end
+    code
+  end
+
+end
+
+module StoreData
+  
+  class PropertyGenerator
+    
+    class << self
+      def from(config, model_conf, field_conf)
+        type = field_conf.type
+        case type
+        when 'int', 'date', 'time'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'int', 'Integer')
+        when 'long', 'datetime'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'long', 'Long')
+        when 'double'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'double', 'Double')
+        when 'boolean'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'boolean', 'Boolean')
+        when 'string', 'object-id'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'String')
+        when 'decimal'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'BigDecimal')
+        when 'object'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, "#{field_conf.model}.#{field_conf.model}StoreData")
+        when 'map'
+          MapPropertyGenerator.new(config, model_conf, field_conf)
+        when 'std-list'
+          StdListPropertyGenerator.new(config, model_conf, field_conf)
+        else
+          raise NotImplementedError, "PropertyGenerator for type #{type} is not implemented"
+        end
+      end
+    end
+    
+    attr_reader :model_conf, :field_conf
+    
+    def initialize(config, model_conf, field_conf)
+      @config = config
+      @model_conf = model_conf
+      @field_conf = field_conf
+    end
+    
+    def required?
+      @field_conf.required?
+    end
+
+    def generate_field_json_annotations_code
+      code = ''
+      json_libs = @config.json_libs
+      if json_libs.include?('Fastjson2')
+        code << "        @com.alibaba.fastjson2.annotation.JSONField(name = #{field_conf.store_name_const_name})\n"
+      end
+      if (json_libs & %w[Jackson Jackson2 Jackson3]).any?
+        code << "        @com.fasterxml.jackson.annotation.JsonProperty(#{field_conf.store_name_const_name})\n"
+      end
+      if json_libs.include?('Jsoniter')
+        if @field_conf.type == 'map'
+          code << "        @com.jsoniter.annotation.JsonProperty(value = #{field_conf.store_name_const_name}, implementation = LinkedHashMap.class)\n"
+        else
+          code << "        @com.jsoniter.annotation.JsonProperty(#{field_conf.store_name_const_name})\n"
+        end
+      end
+      code
+    end
+    
+    def generate_field_declare_code
+      raise NotImplementedError, "generate_field_declare_code is not implemented"
+    end
+    
+    def generate_getter_code
+      raise NotImplementedError, "generate_getter_code is not implemented"
+    end
+    
+    def generate_setter_code
+      raise NotImplementedError, "generate_setter_code is not implemented"
+    end
+    
+  end
+  
+end
+
+module StoreData
+
+  class SimplePropertyGenerator < PropertyGenerator
+
+    attr_reader :primitive_type, :boxed_type
+
+    def initialize(config, model_conf, field_conf, primitive_type, boxed_type=nil)
+      super(config, model_conf, field_conf)
+      @primitive_type = primitive_type
+      @boxed_type = boxed_type || primitive_type
+    end
+
+    def generate_field_declare_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private #{@primitive_type} #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable #{@boxed_type} #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public #{@primitive_type} #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable #{@boxed_type} #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(#{@primitive_type} #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable #{@boxed_type} #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+  end
+
+end
+
+module StoreData
+
+  class MapPropertyGenerator < PropertyGenerator
+
+    attr_reader :value_type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+      @value_type = parse_value_type
+    end
+
+    def generate_field_declare_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private Map<String, #{value_type}> #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable Map<String, #{value_type}> #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public Map<String, #{value_type}> #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable Map<String, #{value_type}> #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(Map<String, #{value_type}> #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable Map<String, #{value_type}> #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    private
+    def parse_value_type
+      value = @field_conf.value
+      case value
+      when 'int'
+        'Integer'
+      when 'long', 'datetime'
+        'Long'
+      when 'double'
+        'Double'
+      when 'decimal'
+        'BigDecimal'
+      when 'string'
+        'String'
+      when 'object'
+        "#{@field_conf.model}.#{@field_conf.model}StoreData"
+      else
+        raise ArgumentError, "Unsupported value type: #{value}"
+      end
+    end
+  end
+
+end
+
+module StoreData
+
+  class StdListPropertyGenerator < PropertyGenerator
+
+    attr_reader :key_type, :value_type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+    end
+
+    def generate_field_declare_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private List<#{value_type}> #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable List<#{value_type}> #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public List<#{value_type}> #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable List<#{value_type}> #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(List<#{value_type}> #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable List<#{value_type}> #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def value_type
+      @value_type ||= parse_value_type
+    end
+
+    def parse_value_type
+      value = @field_conf.value
+      case value
+      when 'int', 'date', 'time'
+        'Integer'
+      when 'long', 'datetime'
+        'Long'
+      when 'double'
+        'Double'
+      when 'decimal'
+        'BigDecimal'
+      when 'string', 'object-id', 'uuid'
+        'String'
+      when 'object'
+        "#{@field_conf.model}.#{@field_conf.model}StoreData"
+      else
+        raise ArgumentError, "Unsupported value type: #{value}"
+      end
+    end
+
+  end
+
+end
+
+
+
+
+module StoreData
+
+  class ClassGenerator
+
+    attr_reader :config, :model_conf
+
+    def initialize(config, model_conf)
+      @config = config
+      @model_conf = model_conf
+    end
+
+    def generate
+      code = "\n"
+      code << generate_class_declaration_code_prefix
+      fields = @model_conf.fields.filter { |field| field.store_field? }
+      property_generators = fields.map { |field| PropertyGenerator.from(@config, @model_conf, field) }
+      property_generators.each { |property_generator| code << property_generator.generate_field_declare_code }
+      property_generators.each do |property_generator|
+        code << "\n"
+        code << property_generator.generate_getter_code
+        code << "\n"
+        code << property_generator.generate_setter_code
+      end
+      code << generate_class_declaration_code_suffix
+    end
+
+    private
+    def generate_class_declaration_code_prefix
+      code = "    @JSONType(alphabetic = false)\n"
+      code << "    public static final class #{@model_conf.name}StoreData {\n"
+    end
+
+    def generate_class_declaration_code_suffix
+      code = "    }\n"
+    end
+    
+  end
+
+end
+
+
+module StoreData
+
+  def self.generate_class_code(config, model_conf)
+    ClassGenerator.new(config, model_conf).generate
+  end
+
+end
+
+
 
 class ModelGenerator
 
@@ -393,11 +919,13 @@ class ModelGenerator
     @config = config
     @model_conf = model_conf
     @imports_generator = ImportsGenerator.new(@config, @model_conf)
-    
+    @consts_generator = ConstsGenerator.new(@config, @model_conf)
   end
 
   def generate
     code = generate_class_prefix_code
+    code << generate_consts_code
+    code << generate_store_data_class
     # TODO generate class content
     code << generate_class_suffix_code
   end
@@ -420,7 +948,8 @@ class ModelGenerator
   end
 
   def generate_class_declaration_code
-    "public class #{@model_conf.name} extends #{generic_super_type} {\n"
+    code = "@NullMarked\n"
+    code << "public final class #{@model_conf.name} extends #{generic_super_type} {\n"
   end
 
   def generic_super_type
@@ -432,6 +961,14 @@ class ModelGenerator
     else
       raise ArgumentError, "Unknown model type: #{@model_conf.type}"
     end
+  end
+
+  def generate_consts_code
+    @consts_generator.generate
+  end
+
+  def generate_store_data_class
+    StoreData::generate_class_code(@config, @model_conf)
   end
 
   def generate_class_suffix_code
