@@ -140,6 +140,10 @@ class FieldConf
     @name[0].upcase << @name[1..]
   end
 
+  def has_modifier?(modifier)
+    @modifiers.include?(modifier)
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?
@@ -184,6 +188,7 @@ class FieldConf
         increment_1 = true
       end
     end
+    @modifiers = modifiers[1..]
     [type, required, virtual, hidden, readonly, transient, increment_1]
   end
 

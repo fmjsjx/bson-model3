@@ -17,7 +17,7 @@ module StoreData
       code << generate_class_declaration_code_prefix
       fields = @model_conf.fields.filter { |field| field.store_field? }
       property_generators = fields.map { |field| PropertyGenerator.from(@config, @model_conf, field) }
-      property_generators.each { |property_generator| code << property_generator.generate_field_declare_code }
+      property_generators.each { |property_generator| code << property_generator.generate_field_declaration_code }
       property_generators.each do |property_generator|
         code << "\n"
         code << property_generator.generate_getter_code

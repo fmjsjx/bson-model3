@@ -8,7 +8,7 @@ module StoreData
       super(config, model_conf, field_conf)
     end
 
-    def generate_field_declare_code
+    def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
         code << "        private List<#{value_type}> #{@field_conf.name};\n"

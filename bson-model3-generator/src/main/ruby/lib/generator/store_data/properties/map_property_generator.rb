@@ -9,7 +9,7 @@ module StoreData
       @value_type = parse_value_type
     end
 
-    def generate_field_declare_code
+    def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
         code << "        private Map<String, #{value_type}> #{@field_conf.name};\n"

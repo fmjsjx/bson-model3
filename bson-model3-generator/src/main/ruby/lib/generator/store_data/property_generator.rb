@@ -25,7 +25,7 @@ module StoreData
         when 'std-list'
           StdListPropertyGenerator.new(config, model_conf, field_conf)
         else
-          raise NotImplementedError, "PropertyGenerator for type #{type} is not implemented"
+          raise ArgumentError, "unsupported field type #{type} on store data"
         end
       end
     end
@@ -61,8 +61,8 @@ module StoreData
       code
     end
     
-    def generate_field_declare_code
-      raise NotImplementedError, "generate_field_declare_code is not implemented"
+    def generate_field_declaration_code
+      raise NotImplementedError, "generate_field_declaration_code is not implemented"
     end
     
     def generate_getter_code
