@@ -43,6 +43,7 @@ module StoreData
       @value_type ||= parse_value_type
     end
 
+    private
     def parse_value_type
       value = @field_conf.value
       case value

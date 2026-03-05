@@ -1,6 +1,7 @@
 require_relative 'imports_generator'
 require_relative 'consts_generator'
 require_relative 'store_data'
+require_relative 'properties_generator'
 
 
 class ModelGenerator
@@ -9,7 +10,7 @@ class ModelGenerator
               :model_conf,
               :imports_generator,
               :consts_generator,
-              :properties_generator,
+              :properties_generator
   
   def initialize(config, model_conf)
     @config = config

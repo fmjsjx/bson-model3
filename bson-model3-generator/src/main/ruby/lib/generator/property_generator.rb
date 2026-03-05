@@ -24,10 +24,15 @@ class PropertyGenerator
         ObjectIdPropertyGenerator.new(config, model_conf, field_conf)
       when 'uuid'
         UuidPropertyGenerator.new(config, model_conf, field_conf)
+      when 'object'
+        ObjectPropertyGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        StdListPropertyGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        MapPropertyGenerator.new(config, model_conf, field_conf)
       else
         raise ArgumentError, "unsupported field type #{type}"
       end
-      # TODO switch type to choose property generator
     end
   end
 
@@ -51,6 +56,10 @@ class PropertyGenerator
     not @field_conf.default.nil?
   end
 
+  def store_field?
+    @field_conf.store_field?
+  end
+
   def generate_field_declaration_code
     raise NotImplementedError, "generate_field_declaration_code is not implemented"
   end
@@ -67,3 +76,6 @@ require_relative 'properties/time_property_generator'
 require_relative 'properties/date_time_property_generator'
 require_relative 'properties/object_id_property_generator'
 require_relative 'properties/uuid_property_generator'
+require_relative 'properties/object_property_generator'
+require_relative 'properties/std_list_property_generator'
+require_relative 'properties/map_property_generator'

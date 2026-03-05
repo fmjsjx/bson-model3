@@ -176,6 +176,10 @@ class FieldConf
     @name[0].upcase << @name[1..]
   end
 
+  def has_modifier?(modifier)
+    @modifiers.include?(modifier)
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?
@@ -220,6 +224,7 @@ class FieldConf
         increment_1 = true
       end
     end
+    @modifiers = modifiers[1..]
     [type, required, virtual, hidden, readonly, transient, increment_1]
   end
 
@@ -621,7 +626,7 @@ module StoreData
         when 'std-list'
           StdListPropertyGenerator.new(config, model_conf, field_conf)
         else
-          raise NotImplementedError, "PropertyGenerator for type #{type} is not implemented"
+          raise ArgumentError, "unsupported field type #{type} on store data"
         end
       end
     end
@@ -657,8 +662,8 @@ module StoreData
       code
     end
     
-    def generate_field_declare_code
-      raise NotImplementedError, "generate_field_declare_code is not implemented"
+    def generate_field_declaration_code
+      raise NotImplementedError, "generate_field_declaration_code is not implemented"
     end
     
     def generate_getter_code
@@ -685,7 +690,7 @@ module StoreData
       @boxed_type = boxed_type || primitive_type
     end
 
-    def generate_field_declare_code
+    def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
         code << "        private #{@primitive_type} #{@field_conf.name};\n"
@@ -731,7 +736,7 @@ module StoreData
       @value_type = parse_value_type
     end
 
-    def generate_field_declare_code
+    def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
         code << "        private Map<String, #{value_type}> #{@field_conf.name};\n"
@@ -796,7 +801,7 @@ module StoreData
       super(config, model_conf, field_conf)
     end
 
-    def generate_field_declare_code
+    def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
         code << "        private List<#{value_type}> #{@field_conf.name};\n"
@@ -831,6 +836,7 @@ module StoreData
       @value_type ||= parse_value_type
     end
 
+    private
     def parse_value_type
       value = @field_conf.value
       case value
@@ -874,7 +880,7 @@ module StoreData
       code << generate_class_declaration_code_prefix
       fields = @model_conf.fields.filter { |field| field.store_field? }
       property_generators = fields.map { |field| PropertyGenerator.from(@config, @model_conf, field) }
-      property_generators.each { |property_generator| code << property_generator.generate_field_declare_code }
+      property_generators.each { |property_generator| code << property_generator.generate_field_declaration_code }
       property_generators.each do |property_generator|
         code << "\n"
         code << property_generator.generate_getter_code
@@ -907,25 +913,612 @@ module StoreData
 
 end
 
+class PropertyGenerator
+
+  class << self
+    def from(config, model_conf, field_conf)
+      type = field_conf.type
+      case type
+      when 'int'
+        IntPropertyGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        LongPropertyGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        DoublePropertyGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        BooleanPropertyGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        StringPropertyGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        DatePropertyGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        TimePropertyGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        DateTimePropertyGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ObjectIdPropertyGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        UuidPropertyGenerator.new(config, model_conf, field_conf)
+      when 'object'
+        ObjectPropertyGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        StdListPropertyGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        MapPropertyGenerator.new(config, model_conf, field_conf)
+      else
+        raise ArgumentError, "unsupported field type #{type}"
+      end
+    end
+  end
+
+  attr_reader :config, :model_conf, :field_conf
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+  end
+
+  def name
+    @field_conf.name
+  end
+
+  def required?
+    @field_conf.required?
+  end
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def store_field?
+    @field_conf.store_field?
+  end
+
+  def generate_field_declaration_code
+    raise NotImplementedError, "generate_field_declaration_code is not implemented"
+  end
+
+end
+
+
+
+class IntPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != '0'
+        "    private int #{name} = #{default_value_code};\n"
+      else
+        "    private int #{name};\n"
+      end
+    else
+      "    private @Nullable Integer #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code 
+    case field_conf.default.upcase
+    when 'MIN'
+      'Integer.MIN_VALUE'
+    when 'MAX'
+      'Integer.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
+
+
+class LongPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != '0' and default_value_code != '0L'
+        "    private long #{name} = #{default_value_code};\n"
+      else
+        "    private long #{name};\n"
+      end
+    else
+      "    private @Nullable Long #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    case field_conf.default.upcase
+    when 'MIN'
+      'Long.MIN_VALUE'
+    when 'MAX'
+      'Long.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
+
+
+class DoublePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        if default_value_code == '0.0'
+          "    private double #{name};\n"
+        else
+          "    private double #{name} = #{default_value_code};\n"
+        end
+      else
+        "    private double #{name} = Double.NaN;\n"
+      end
+    else
+      "    private @Nullable Double #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    case field_conf.default.upcase
+    when 'NAN'
+      'Double.NaN'
+    when '+INF'
+      'Double.POSITIVE_INFINITY'
+    when '-INF'
+      'Double.NEGATIVE_INFINITY'
+    when 'MIN'
+      'Double.MIN_VALUE'
+    when 'MAX'
+      'Double.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
+
+
+class BooleanPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != 'false'
+        "    private boolean #{name} = #{default_value_code};\n"
+      else
+        "    private boolean #{name};\n"
+      end
+    else
+      "    private @Nullable Boolean #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    case field_conf.default.downcase
+    when 'true', '1', 'yes', 'y', 'on'
+      'true'
+    else
+      'false'
+    end
+  end
+
+end
+
+require 'json'
+
+
+class StringPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private String #{name} = #{default_value_code};\n"
+      else
+        "    private String #{name} = \"\";\n"
+      end
+    else
+      "    private @Nullable String #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    field_conf.default.to_json
+  end
+
+end
+
+require 'json'
+
+
+class DatePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalDate #{name} = #{default_value_code};\n"
+      else
+        "    private LocalDate #{name} = LocalDate.EPOCH;\n"
+      end
+    else
+      "    private @Nullable LocalDate #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalDate.MIN'
+    when 'MAX'
+      'LocalDate.MAX'
+    when 'EPOCH'
+      'LocalDate.EPOCH'
+    when 'NOW'
+      'LocalDate.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
+        value
+      else
+        "LocalDate.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class TimePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalTime #{name} = #{default_value_code};\n"
+      else
+        "    private LocalTime #{name} = LocalTime.MIDNIGHT;\n"
+      end
+    else
+      "    private @Nullable LocalTime #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalTime.MIN'
+    when 'MAX'
+      'LocalTime.MAX'
+    when 'MIDNIGHT'
+      'LocalTime.MIDNIGHT'
+    when 'NOON'
+      'LocalTime.NOON'
+    when 'NOW'
+      'LocalTime.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
+        value
+      else
+        "LocalTime.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class DateTimePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalDateTime #{name} = #{default_value_code};\n"
+      else
+        "    private LocalDateTime #{name} = BsonModelConstants.EPOCH_DATE_TIME;\n"
+      end
+    else
+      "    private @Nullable LocalDateTime #{name};\n"
+    end
+  end
+
+  private
+  def default_value_code
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalDateTime.MIN'
+    when 'MAX'
+      'LocalDateTime.MAX'
+    when 'EPOCH'
+      'BsonModelConstants.EPOCH_DATE_TIME'
+    when 'NOW'
+      'LocalDateTime.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
+        value
+      else
+        "LocalDateTime.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class ObjectIdPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      "    private ObjectId #{name};\n"
+    else
+      "    private @Nullable ObjectId #{name};\n"
+    end
+  end
+
+end
+
+
+
+class UuidPropertyGenerator < PropertyGenerator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+  end
+
+  def generate_field_declaration_code
+    if required?
+      "    private UUID #{name};\n"
+    else
+      "    private @Nullable UUID #{name};\n"
+    end
+  end
+
+end
+
+class ObjectPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    code = ''
+    if store_field? and required?
+      code << "    private final #{field_conf.model} #{name} = new #{field_conf.model}()\n"
+      code << "            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name});\n"
+    else
+      code << "    private @Nullable #{field_conf.model} #{name};\n"
+    end
+  end
+
+end
+
+class StdListPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      "    private List<@Nullable #{value_type}> #{name} = List.of();\n"
+    else
+      "    private @Nullable List<@Nullable #{value_type}> #{name};\n"
+    end
+  end
+
+  def value_type
+    @value_type = parse_value_type
+  end
+
+  private
+  def parse_value_type
+    value = field_conf.value
+    case value
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'date'
+      'LocalDate'
+    when 'time'
+      'LocalTime'
+    when 'datetime'
+      'LocalDateTime'
+    when 'object-id'
+      'ObjectId'
+    when 'uuid'
+      'UUID'
+    when 'object'
+      "#{field_conf.model}"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+class MapPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    code = ''
+    if store_field? and required?
+      code << "    private final #{generic_type} #{name} = #{map_init_code}\n"
+      code << "            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name});\n"
+    else
+      code << "    private @Nullable #{generic_type} #{name};\n"
+    end
+    code
+  end
+
+  def generic_type
+    @generic_type ||= parse_generic_type
+  end
+
+  def key_type
+    @key_type ||= parse_key_type
+  end
+
+  def value_type
+    @value_type ||= parse_value_type
+  end
+
+  def single_value_type
+    @single_value_type ||= parse_single_value_type
+  end
+
+  private
+  def parse_generic_type
+    if field_conf.type == 'object'
+      "DefaultMapModel<#{key_type}, #{value_type}>"
+    else
+      "SingleValueMapModel<#{key_type}, #{value_type}>"
+    end
+  end
+
+  def parse_key_type
+    case field_conf.key
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'string'
+      'String'
+    else
+      raise ArgumentError, "Unsupported key type: #{field_conf.key}"
+    end
+  end
+
+  def parse_value_type
+    value = field_conf.value
+    case value
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'datetime'
+      'LocalDateTime'
+    when 'object'
+      "#{field_conf.model}"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+  def map_init_code
+    if field_conf.value == 'object'
+      case key_type
+      when 'Integer'
+        "DefaultMapModel.integerKeysMap(#{value_type}::new)"
+      when 'Long'
+        "DefaultMapModel.longKeysMap(#{value_type}::new)"
+      when 'String'
+        "DefaultMapModel.stringKeysMap(#{value_type}::new)"
+      else
+        raise ArgumentError, "Unsupported key type: #{key_type}"
+      end
+    else
+      case key_type
+      when 'Integer'
+        "SingleValueMapModel.integerKeysMap(#{single_value_type})"
+      when 'Long'
+        "SingleValueMapModel.longKeysMap(#{single_value_type})"
+      when 'String'
+        "SingleValueMapModel.stringKeysMap(#{single_value_type})"
+      else
+        raise ArgumentError, "Unsupported key type: #{key_type}"
+      end
+    end
+  end
+
+  def parse_single_value_type
+    case value_type
+    when 'Integer'
+      'SingleValues.integer()'
+    when 'Long'
+      'SingleValues.longValue()'
+    when 'Double'
+      'SingleValues.doubleValue()'
+    when 'BigDecimal'
+      'SingleValues.bigDecimal()'
+    when 'String'
+      'SingleValues.string()'
+    when 'LocalDateTime'
+      'SingleValues.localDateTime()'
+    else
+      raise ArgumentError, "Unsupported single value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+
+class PropertiesGenerator
+
+  attr_reader :config, :model_conf, :property_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @property_generators = model_conf.fields.map do |field_conf|
+      PropertyGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate_fields_code
+    code = "\n"
+    @property_generators.each do |property_generator|
+      unless property_generator.field_conf.virtual?
+        code << property_generator.generate_field_declaration_code
+      end
+    end
+    code
+  end
+
+end
+
 
 
 class ModelGenerator
 
   attr_reader :config,
               :model_conf,
-              :imports_generator
+              :imports_generator,
+              :consts_generator,
+              :properties_generator
   
   def initialize(config, model_conf)
     @config = config
     @model_conf = model_conf
     @imports_generator = ImportsGenerator.new(@config, @model_conf)
     @consts_generator = ConstsGenerator.new(@config, @model_conf)
+    @properties_generator = PropertiesGenerator.new(@config, @model_conf)
   end
 
   def generate
     code = generate_class_prefix_code
     code << generate_consts_code
     code << generate_store_data_class
+    code << generate_fields_code
     # TODO generate class content
     code << generate_class_suffix_code
   end
@@ -971,6 +1564,10 @@ class ModelGenerator
     StoreData::generate_class_code(@config, @model_conf)
   end
 
+  def generate_fields_code
+    @properties_generator.generate_fields_code
+  end
+
   def generate_class_suffix_code
     "}\n"
   end
@@ -999,6 +1596,7 @@ class Generator
     generated_contents.each do |model_conf, content|
       file_path = File.join(package_dir, "#{model_conf.name}.java")
       puts "Saving model: #{model_conf.package}.#{model_conf.name} => #{file_path}..."
+      # TODO: fix me
       puts "------------------------------------------------------"
       puts content
       puts "======================================================"
