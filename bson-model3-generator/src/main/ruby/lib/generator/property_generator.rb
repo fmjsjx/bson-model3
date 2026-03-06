@@ -60,8 +60,53 @@ class PropertyGenerator
     @field_conf.store_field?
   end
 
+  def virtual?
+    @field_conf.virtual?
+  end
+
+  def no_setter?
+    virtual?
+  end
+
+  def virtual_code
+    if virtual?
+      if not @field_conf.block.nil?
+        @field_conf.block.lines.map { |line| "        #{line.chomp}" }.join("\n")
+      elsif not @field_conf.expression.nil?
+        "        return #{@field_conf.expression};"
+      else
+        raise ArgumentError, "At least one of block or expression must be present"
+      end
+    end
+  end
+
+  def field_changed_code
+    associated_fields = @model_conf.fields.filter do |field|
+      field.name == @field_conf.name or (field.virtual? and field.sources.include?(@field_conf.name))
+    end.map do |field|
+      field.field_index_const_name
+    end
+    if associated_fields.size == 1
+      "triggerChange(#{associated_fields[0]});"
+    else
+      "fieldsChanged(#{associated_fields.join(', ')});"
+    end
+  end
+
   def generate_field_declaration_code
-    raise NotImplementedError, "generate_field_declaration_code is not implemented"
+    raise UnsupportedOperationException, "generate_field_declaration_code is not supported on #{self.class}"
+  end
+
+  def generate_getter_code
+    raise UnsupportedOperationException, "generate_getter_code is not supported on #{self.class}"
+  end
+
+  def generate_setter_code
+    raise UnsupportedOperationException, "generate_setter_code is not supported on #{self.class}"
+  end
+
+  def generate_increment_code
+    raise UnsupportedOperationException, "generate_increment_code is not supported on #{self.class}"
   end
 
 end

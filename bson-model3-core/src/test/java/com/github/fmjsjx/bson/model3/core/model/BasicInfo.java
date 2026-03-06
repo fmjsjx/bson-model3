@@ -106,7 +106,6 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     public void setName(String name) {
-        Objects.requireNonNull(name, "name must not be null");
         if (!name.equals(this.name)) {
             this.name = name;
             triggerChange(FIELD_INDEX_NAME);
@@ -140,7 +139,6 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     public void setCreatedTime(LocalDateTime createdTime) {
-        Objects.requireNonNull(createdTime, "createTime must not be null");
         if (!createdTime.equals(this.createdTime)) {
             this.createdTime = createdTime;
             fieldsChanged(FIELD_INDEX_CREATED_TIME, FIELD_INDEX_CREATED_AT);

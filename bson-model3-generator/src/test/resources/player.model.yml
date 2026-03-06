@@ -43,7 +43,7 @@ models:
         key: int
         value: int
       - name: updatedVersion _uv
-        type: int required increment-1 hidden
+        type: int required increment hidden
       - name: updatedTime _ut
         type: datetime hidden
       - name: updatedAt
@@ -72,7 +72,7 @@ models:
           - createdTime
         imports:
           - com.github.fmjsjx.libcommon.util.DateTimeUtil
-        expression: DateTimeUtil.toEpochMilli(getCreatedTime());
+        expression: DateTimeUtil.toEpochMilli(getCreatedTime())
   - name: Preferences
     type: object
     fields:

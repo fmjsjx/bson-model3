@@ -14,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @NullMarked
 public final class Equipment extends AbstractObjectModel<Equipment> {
@@ -114,7 +113,6 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
     }
 
     public void setId(String id) {
-        Objects.requireNonNull(id, "id must not be null");
         if (!id.equals(this.id)) {
             this.id = id;
             triggerChange(FIELD_INDEX_ID);

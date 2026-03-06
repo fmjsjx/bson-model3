@@ -20,6 +20,20 @@ class PropertiesGenerator
         code << property_generator.generate_field_declaration_code
       end
     end
+    @property_generators.each do |property_generator|
+      # generate getter
+      code << "\n"
+      code << property_generator.generate_getter_code
+      unless property_generator.no_setter?
+        # generate setter
+        code << "\n"
+        code << property_generator.generate_setter_code
+      end
+      if property_generator.field_conf.increment?
+        code << "\n"
+        code << property_generator.generate_increment_code
+      end
+    end
     code
   end
 

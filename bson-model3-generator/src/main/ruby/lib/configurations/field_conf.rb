@@ -36,7 +36,7 @@ class FieldConf
     end
     @index = index
     @name, @store_name, @display_name = parse_names(name)
-    @type, @required, @virtual, @hidden, @readonly, @transient, @increment_1 = parse_type_and_modifiers(type)
+    @type, @required, @virtual, @hidden, @readonly, @transient, @increment = parse_type_and_modifiers(type)
     @default = default.to_s unless default.nil?
     @model = model.to_s unless model.nil?
     @key = key.to_s unless key.nil?
@@ -67,8 +67,8 @@ class FieldConf
     @transient
   end
 
-  def increment_1?
-    @increment_1
+  def increment?
+    @increment
   end
 
   # Returns whether the field should be stored in MongoDB
@@ -171,7 +171,7 @@ class FieldConf
     hidden = false
     readonly = false
     transient = false
-    increment_1 = false
+    increment = false
     modifiers[1..].each do |modifier|
       case modifier
       when 'required'
@@ -184,12 +184,12 @@ class FieldConf
         readonly = true
       when 'transient'
         transient = true
-      when 'increment-1'
-        increment_1 = true
+      when 'increment', 'increment-1'
+        increment = true
       end
     end
     @modifiers = modifiers[1..]
-    [type, required, virtual, hidden, readonly, transient, increment_1]
+    [type, required, virtual, hidden, readonly, transient, increment]
   end
 
   def parse_sources(sources)

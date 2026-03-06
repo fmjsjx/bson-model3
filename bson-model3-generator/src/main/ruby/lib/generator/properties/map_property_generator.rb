@@ -27,6 +27,48 @@ class MapPropertyGenerator < PropertyGenerator
     @single_value_type ||= parse_single_value_type
   end
 
+  def no_setter?
+    field_conf.virtual? or (store_field? and required?)
+  end
+
+  def generate_getter_code
+    code = ''
+    if store_field? and required?
+      code << "    public #{generic_type} #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable #{generic_type} #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    code << "    public void set#{field_conf.camel_case_name}(@Nullable #{generic_type} #{name}) {\n"
+    if store_field?
+      code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+      code << "            if (#{name} != null) {\n"
+      code << "                #{name}.ensureDetached();\n"
+      code << "                if (this.#{name} != null) {\n"
+      code << "                    this.#{name}.detach();\n"
+      code << "                }\n"
+      code << "                this.#{name} = #{name}.parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name}).fullUpdate();\n"
+      code << "            } else {\n"
+      code << "                this.#{name}.detach();\n"
+      code << "                this.#{name} = null;\n"
+      code << "            }\n"
+      code << "            #{field_changed_code}\n"
+      code << "        }\n"
+    else
+      code << "        this.#{name} = #{name};\n"
+    end
+    code << "    }\n"
+  end
+
   private
   def parse_generic_type
     if field_conf.type == 'object'

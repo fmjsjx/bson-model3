@@ -219,7 +219,7 @@ public final class Player extends AbstractRootModel<Player> {
         return updatedTime;
     }
 
-    public void setUpdatedTime(LocalDateTime updatedTime) {
+    public void setUpdatedTime(@Nullable LocalDateTime updatedTime) {
         if (!Objects.equals(updatedTime, this.updatedTime)) {
             this.updatedTime = updatedTime;
             fieldsChanged(FIELD_INDEX_UPDATED_TIME, FIELD_INDEX_UPDATED_AT);
