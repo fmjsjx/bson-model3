@@ -1,5 +1,4 @@
 require_relative '../property_generator'
-require 'json'
 
 
 class ObjectIdPropertyGenerator < PropertyGenerator

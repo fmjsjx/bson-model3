@@ -144,6 +144,10 @@ class FieldConf
     @modifiers.include?(modifier)
   end
 
+  def has_children?
+    @type == 'object' or @type == 'map'
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?

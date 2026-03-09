@@ -180,6 +180,10 @@ class FieldConf
     @modifiers.include?(modifier)
   end
 
+  def has_children?
+    @type == 'object' or @type == 'map'
+  end
+
   private
   def parse_names(name_value)
     if name_value.nil?
@@ -1026,6 +1030,273 @@ class PropertyGenerator
 
 end
 
+class DefaultValue
+
+  @@instance = DefaultValue.new
+
+  class << self
+
+    def from(field_conf)
+      case field_conf.type
+      when 'int'
+        IntDefaultValue.instance
+      when 'long'
+        LongDefaultValue.instance
+      when 'double'
+        DoubleDefaultValue.instance
+      when 'boolean'
+        BooleanDefaultValue.instance
+      when 'string'
+        StringDefaultValue.instance
+      when 'date'
+        DateDefaultValue.instance
+      when 'time'
+        TimeDefaultValue.instance
+      when 'datetime'
+        DateTimeDefaultValue.instance
+      else
+        @@instance
+      end
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    field_conf.default
+  end
+
+end
+
+
+
+class LongDefaultValue < DefaultValue
+
+  @@instance = LongDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    case field_conf.default.upcase
+    when 'MIN'
+      'Long.MIN_VALUE'
+    when 'MAX'
+      'Long.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
+
+
+class DoubleDefaultValue < DefaultValue
+
+  @@instance = DoubleDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    case field_conf.default.upcase
+    when 'NAN'
+      'Double.NaN'
+    when '+INF'
+      'Double.POSITIVE_INFINITY'
+    when '-INF'
+      'Double.NEGATIVE_INFINITY'
+    when 'MIN'
+      'Double.MIN_VALUE'
+    when 'MAX'
+      'Double.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
+
+
+class BooleanDefaultValue < DefaultValue
+
+  @@instance = BooleanDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    case field_conf.default.downcase
+    when 'true', '1', 'yes', 'y', 'on'
+      'true'
+    else
+      'false'
+    end
+  end
+
+end
+
+require 'json'
+
+
+class StringDefaultValue < DefaultValue
+
+  @@instance = StringDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    field_conf.default.to_json
+  end
+
+end
+
+require 'json'
+
+
+class DateDefaultValue < DefaultValue
+
+  @@instance = DateDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalDate.MIN'
+    when 'MAX'
+      'LocalDate.MAX'
+    when 'EPOCH'
+      'LocalDate.EPOCH'
+    when 'NOW'
+      'LocalDate.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
+        value
+      else
+        "LocalDate.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class TimeDefaultValue < DefaultValue
+
+  @@instance = TimeDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalTime.MIN'
+    when 'MAX'
+      'LocalTime.MAX'
+    when 'MIDNIGHT'
+      'LocalTime.MIDNIGHT'
+    when 'NOON'
+      'LocalTime.NOON'
+    when 'NOW'
+      'LocalTime.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
+        value
+      else
+        "LocalTime.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class DateTimeDefaultValue < DefaultValue
+
+  @@instance = DateTimeDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    value = field_conf.default
+    case value.upcase
+    when 'MIN'
+      'LocalDateTime.MIN'
+    when 'MAX'
+      'LocalDateTime.MAX'
+    when 'EPOCH'
+      'BsonModelConstants.EPOCH_DATE_TIME'
+    when 'NOW'
+      'LocalDateTime.now()'
+    else
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
+        value
+      else
+        "LocalDateTime.parse(#{value.to_json})"
+      end
+    end
+  end
+
+end
+
+
+
+
+class IntDefaultValue < DefaultValue
+
+  @@instance = IntDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    case field_conf.default.upcase
+    when 'MIN'
+      'Integer.MIN_VALUE'
+    when 'MAX'
+      'Integer.MAX_VALUE'
+    else
+      field_conf.default
+    end
+  end
+
+end
+
 
 
 class IntPropertyGenerator < PropertyGenerator
@@ -1106,14 +1377,7 @@ class IntPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code 
-    case field_conf.default.upcase
-    when 'MIN'
-      'Integer.MIN_VALUE'
-    when 'MAX'
-      'Integer.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1196,14 +1460,7 @@ class LongPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.upcase
-    when 'MIN'
-      'Long.MIN_VALUE'
-    when 'MAX'
-      'Long.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1272,20 +1529,7 @@ class DoublePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.upcase
-    when 'NAN'
-      'Double.NaN'
-    when '+INF'
-      'Double.POSITIVE_INFINITY'
-    when '-INF'
-      'Double.NEGATIVE_INFINITY'
-    when 'MIN'
-      'Double.MIN_VALUE'
-    when 'MAX'
-      'Double.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1350,17 +1594,11 @@ class BooleanPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.downcase
-    when 'true', '1', 'yes', 'y', 'on'
-      'true'
-    else
-      'false'
-    end
+    BooleanDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
 
-require 'json'
 
 
 class StringPropertyGenerator < PropertyGenerator
@@ -1421,12 +1659,11 @@ class StringPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    field_conf.default.to_json
+    StringDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
 
-require 'json'
 
 
 class DatePropertyGenerator < PropertyGenerator
@@ -1487,28 +1724,11 @@ class DatePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalDate.MIN'
-    when 'MAX'
-      'LocalDate.MAX'
-    when 'EPOCH'
-      'LocalDate.EPOCH'
-    when 'NOW'
-      'LocalDate.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
-        value
-      else
-        "LocalDate.parse(#{value.to_json})"
-      end
-    end
+    DateDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
 
-require 'json'
 
 
 class TimePropertyGenerator < PropertyGenerator
@@ -1569,30 +1789,11 @@ class TimePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalTime.MIN'
-    when 'MAX'
-      'LocalTime.MAX'
-    when 'MIDNIGHT'
-      'LocalTime.MIDNIGHT'
-    when 'NOON'
-      'LocalTime.NOON'
-    when 'NOW'
-      'LocalTime.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
-        value
-      else
-        "LocalTime.parse(#{value.to_json})"
-      end
-    end
+    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
 
-require 'json'
 
 
 class DateTimePropertyGenerator < PropertyGenerator
@@ -1653,28 +1854,11 @@ class DateTimePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalDateTime.MIN'
-    when 'MAX'
-      'LocalDateTime.MAX'
-    when 'EPOCH'
-      'BsonModelConstants.EPOCH_DATE_TIME'
-    when 'NOW'
-      'LocalDateTime.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
-        value
-      else
-        "LocalDateTime.parse(#{value.to_json})"
-      end
-    end
+    DateTimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
 
-require 'json'
 
 
 class ObjectIdPropertyGenerator < PropertyGenerator
@@ -1791,6 +1975,8 @@ class UuidPropertyGenerator < PropertyGenerator
 
 end
 
+
+
 class ObjectPropertyGenerator < PropertyGenerator
 
   def generate_field_declaration_code
@@ -1846,6 +2032,8 @@ class ObjectPropertyGenerator < PropertyGenerator
   end
 
 end
+
+
 
 class StdListPropertyGenerator < PropertyGenerator
 
@@ -1935,6 +2123,8 @@ class StdListPropertyGenerator < PropertyGenerator
   end
 
 end
+
+
 
 class MapPropertyGenerator < PropertyGenerator
 
@@ -2113,6 +2303,12 @@ class PropertiesGenerator
     end
   end
 
+  def generate_properties_code
+    code = generate_fields_code
+    code << generate_getters_setters_code
+  end
+
+  private
   def generate_fields_code
     code = "\n"
     @property_generators.each do |property_generator|
@@ -2120,6 +2316,11 @@ class PropertiesGenerator
         code << property_generator.generate_field_declaration_code
       end
     end
+    code
+  end
+
+  def generate_getters_setters_code
+    code = ''
     @property_generators.each do |property_generator|
       # generate getter
       code << "\n"
@@ -2139,31 +2340,394 @@ class PropertiesGenerator
 
 end
 
+class CleanFieldGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        CleanIntFieldGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        CleanLongFieldGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        CleanDoubleFieldGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        CleanBooleanFieldGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        CleanStringFieldGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        CleanDateFieldGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        CleanTimeFieldGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        CleanDateTimeFieldGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        CleanObjectIdFieldGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        CleanUuidFieldGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        CleanStdListFieldGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+  end
+
+  def required?
+    @field_conf.required?
+  end
+
+  def store_field?
+    @field_conf.store_field?
+  end
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def generate
+    if store_field?
+      if required?
+        generate_required_clean_code
+      else
+        generate_optional_clean_code
+      end
+    else
+      "        #{@field_conf.name} = null;\n"
+    end
+  end
+
+  def generate_required_clean_code
+    "        #{@field_conf.name}.clean();\n"
+  end
+
+  def generate_optional_clean_code
+    code = ''
+    code << "        var _#{@field_conf.name} = #{@field_conf.name};\n"
+    code << "        if (_#{@field_conf.name} != null) {\n"
+    code << "            _#{@field_conf.name}.clean().detach();\n"
+    code << "            #{@field_conf.name} = null;\n"
+    code << "        }\n"
+  end
+
+end
+
+
+
+
+class CleanIntFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = 0;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class CleanLongFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = 0L;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    LongDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDoubleFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = Double.NaN;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DoubleDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanBooleanFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = false;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    BooleanDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanStringFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = \"\";\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    StringDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDateFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = LocalDate.EPOCH;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DateDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanTimeFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = LocalTime.MIDNIGHT;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    TimeDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDateTimeFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = BsonModelConstants.EPOCH_DATE_TIME;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DateTimeDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanObjectIdFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    code = ''
+    code << "        //noinspection DataFlowIssue\n"
+    code << "        #{@field_conf.name} = null;\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+class CleanUuidFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    code = ''
+    code << "        //noinspection DataFlowIssue\n"
+    code << "        #{@field_conf.name} = null;\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+class CleanStdListFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    "        #{@field_conf.name} = List.of();\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+
+class CleanFieldsGenerator
+
+  attr_reader :config, :model_conf, :fields
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @clean_field_generators = model_conf.fields.filter do |field_conf|
+      not field_conf.virtual?
+    end.map do |field_conf|
+      CleanFieldGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = "\n"
+    code << "    @Override\n"
+    code << "    protected #{@model_conf.name} cleanFields() {\n"
+    @clean_field_generators.each do |clean_field_generator|
+      code << clean_field_generator.generate
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
+
+
 
 
 class ModelGenerator
 
   attr_reader :config,
               :model_conf,
+              :model_name,
+              :store_fields,
               :imports_generator,
               :consts_generator,
-              :properties_generator
+              :properties_generator,
+              :clean_fields_generator
   
   def initialize(config, model_conf)
     @config = config
     @model_conf = model_conf
+    @model_name = model_conf.name
+    @store_fields = model_conf.fields.filter { |field_conf| field_conf.store_field? }
     @imports_generator = ImportsGenerator.new(@config, @model_conf)
     @consts_generator = ConstsGenerator.new(@config, @model_conf)
     @properties_generator = PropertiesGenerator.new(@config, @model_conf)
+    @has_children = @store_fields.any? { |field_conf| field_conf.has_children? }
+    @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
   end
 
   def generate
     code = generate_class_prefix_code
     code << generate_consts_code
-    code << generate_store_data_class
-    code << generate_fields_code
-    # TODO generate class content
+    code << generate_store_data_class_code
+    code << generate_properties_code
+    code << generate_methods_code
     code << generate_class_suffix_code
+  end
+
+  def has_children?
+    @has_children
   end
 
   private
@@ -2185,15 +2749,15 @@ class ModelGenerator
 
   def generate_class_declaration_code
     code = "@NullMarked\n"
-    code << "public final class #{@model_conf.name} extends #{generic_super_type} {\n"
+    code << "public final class #{@model_name} extends #{generic_super_type} {\n"
   end
 
   def generic_super_type
     case @model_conf.type
     when 'object'
-      "AbstractObjectModel<#{@model_conf.name}>"
+      "AbstractObjectModel<#{@model_name}>"
     when 'root'
-      "AbstractRootModel<#{@model_conf.name}>"
+      "AbstractRootModel<#{@model_name}>"
     else
       raise ArgumentError, "Unknown model type: #{@model_conf.type}"
     end
@@ -2203,12 +2767,49 @@ class ModelGenerator
     @consts_generator.generate
   end
 
-  def generate_store_data_class
+  def generate_store_data_class_code
     StoreData::generate_class_code(@config, @model_conf)
   end
 
-  def generate_fields_code
-    @properties_generator.generate_fields_code
+  def generate_properties_code
+    @properties_generator.generate_properties_code
+  end
+
+  def generate_methods_code
+    code = ''
+    if @model_conf.type == 'root'
+      code << generate_store_data_type_code
+    end
+    if has_children?
+      code << generate_reset_children_code
+    end
+    code << generate_clean_fields_code
+    # TODO generate other methods
+  end
+
+  def generate_store_data_type_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    protected Class<#{@model_name}StoreData> storeDataType() {\n"
+    code << "        return #{@model_name}StoreData.class;\n"
+    code << "    }\n"
+  end
+
+  def generate_reset_children_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    protected #{@model_name} resetChildren() {\n"
+    @store_fields.each do |field_conf|
+      if field_conf.has_children?
+        code << "        #{field_conf.name}.reset();\n"
+      end
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+  def generate_clean_fields_code
+    @clean_fields_generator.generate
   end
 
   def generate_class_suffix_code

@@ -1,5 +1,5 @@
 require_relative '../property_generator'
-require 'json'
+require_relative '../default_value/string_default_value'
 
 
 class StringPropertyGenerator < PropertyGenerator
@@ -60,7 +60,7 @@ class StringPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    field_conf.default.to_json
+    StringDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

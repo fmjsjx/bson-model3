@@ -232,7 +232,7 @@ public final class Player extends AbstractRootModel<Player> {
     }
 
     @Override
-    protected Class<?> storeDataType() {
+    protected Class<PlayerStoreData> storeDataType() {
         return PlayerStoreData.class;
     }
 
@@ -248,7 +248,7 @@ public final class Player extends AbstractRootModel<Player> {
 
     @Override
     protected Player cleanFields() {
-        id = 0;
+        id = 0L;
         basicInfo.clean();
         preferences.clean();
         wallet.clean();
@@ -260,7 +260,7 @@ public final class Player extends AbstractRootModel<Player> {
     }
 
     @Override
-    protected void appendFiledUpdates(List<Bson> updates) {
+    protected void appendFieldUpdates(List<Bson> updates) {
         var changedFields = this.changedFields;
         if (changedFields.isEmpty()) {
             return;

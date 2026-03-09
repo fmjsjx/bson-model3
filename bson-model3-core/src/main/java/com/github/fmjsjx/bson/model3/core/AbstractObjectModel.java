@@ -94,7 +94,7 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
             return 0;
         }
         var originalSize = updates.size();
-        appendFiledUpdates(updates);
+        appendFieldUpdates(updates);
         return updates.size() - originalSize;
     }
 
@@ -104,7 +104,7 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
      *
      * @param updates the list of the updates
      */
-    protected abstract void appendFiledUpdates(List<Bson> updates);
+    protected abstract void appendFieldUpdates(List<Bson> updates);
 
     @Override
     public @Nullable Map<String, ? extends Object> toUpdated() {

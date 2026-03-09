@@ -1,3 +1,6 @@
+require_relative '../property_generator'
+
+
 class StdListPropertyGenerator < PropertyGenerator
 
   def generate_field_declaration_code

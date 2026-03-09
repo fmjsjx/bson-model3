@@ -159,7 +159,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     }
 
     @Override
-    protected void appendFiledUpdates(List<Bson> updates) {
+    protected void appendFieldUpdates(List<Bson> updates) {
         var changedFields = this.changedFields;
         if (changedFields.isEmpty()) {
             return;

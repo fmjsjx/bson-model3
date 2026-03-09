@@ -1,4 +1,5 @@
 require_relative '../property_generator'
+require_relative '../default_value/long_default_value'
 
 
 class LongPropertyGenerator < PropertyGenerator
@@ -77,14 +78,7 @@ class LongPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.upcase
-    when 'MIN'
-      'Long.MIN_VALUE'
-    when 'MAX'
-      'Long.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

@@ -13,6 +13,12 @@ class PropertiesGenerator
     end
   end
 
+  def generate_properties_code
+    code = generate_fields_code
+    code << generate_getters_setters_code
+  end
+
+  private
   def generate_fields_code
     code = "\n"
     @property_generators.each do |property_generator|
@@ -20,6 +26,11 @@ class PropertiesGenerator
         code << property_generator.generate_field_declaration_code
       end
     end
+    code
+  end
+
+  def generate_getters_setters_code
+    code = ''
     @property_generators.each do |property_generator|
       # generate getter
       code << "\n"

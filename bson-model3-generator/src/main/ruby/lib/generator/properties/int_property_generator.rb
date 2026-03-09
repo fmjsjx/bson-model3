@@ -1,4 +1,5 @@
 require_relative '../property_generator'
+require_relative '../default_value/int_default_value'
 
 
 class IntPropertyGenerator < PropertyGenerator
@@ -79,14 +80,7 @@ class IntPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code 
-    case field_conf.default.upcase
-    when 'MIN'
-      'Integer.MIN_VALUE'
-    when 'MAX'
-      'Integer.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
   end
 
 end

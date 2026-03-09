@@ -1,4 +1,5 @@
 require_relative '../property_generator'
+require_relative '../default_value/double_default_value'
 
 
 class DoublePropertyGenerator < PropertyGenerator
@@ -63,20 +64,7 @@ class DoublePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.upcase
-    when 'NAN'
-      'Double.NaN'
-    when '+INF'
-      'Double.POSITIVE_INFINITY'
-    when '-INF'
-      'Double.NEGATIVE_INFINITY'
-    when 'MIN'
-      'Double.MIN_VALUE'
-    when 'MAX'
-      'Double.MAX_VALUE'
-    else
-      field_conf.default
-    end
+    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

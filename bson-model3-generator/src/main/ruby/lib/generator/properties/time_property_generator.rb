@@ -1,5 +1,5 @@
 require_relative '../property_generator'
-require 'json'
+require_relative '../default_value/time_default_value'
 
 
 class TimePropertyGenerator < PropertyGenerator
@@ -60,25 +60,7 @@ class TimePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalTime.MIN'
-    when 'MAX'
-      'LocalTime.MAX'
-    when 'MIDNIGHT'
-      'LocalTime.MIDNIGHT'
-    when 'NOON'
-      'LocalTime.NOON'
-    when 'NOW'
-      'LocalTime.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
-        value
-      else
-        "LocalTime.parse(#{value.to_json})"
-      end
-    end
+    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

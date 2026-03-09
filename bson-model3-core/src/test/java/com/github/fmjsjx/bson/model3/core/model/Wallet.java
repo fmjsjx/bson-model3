@@ -146,15 +146,15 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
 
     @Override
     protected Wallet cleanFields() {
-        coinTotal = 0;
-        coinConsumed = 0;
-        diamondTotal = 0;
-        diamondConsumed = 0;
+        coinTotal = 0L;
+        coinConsumed = 0L;
+        diamondTotal = 0L;
+        diamondConsumed = 0L;
         return this;
     }
 
     @Override
-    protected void appendFiledUpdates(List<Bson> updates) {
+    protected void appendFieldUpdates(List<Bson> updates) {
         var changedFields = this.changedFields;
         if (changedFields.isEmpty()) {
             return;

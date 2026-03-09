@@ -1,4 +1,5 @@
 require_relative '../property_generator'
+require_relative '../default_value/boolean_default_value'
 
 
 class BooleanPropertyGenerator < PropertyGenerator
@@ -59,12 +60,7 @@ class BooleanPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    case field_conf.default.downcase
-    when 'true', '1', 'yes', 'y', 'on'
-      'true'
-    else
-      'false'
-    end
+    BooleanDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
