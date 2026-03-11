@@ -34,7 +34,7 @@ class StringPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(String #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(String #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -45,7 +45,7 @@ class StringPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable String #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable String #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"

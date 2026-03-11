@@ -14,6 +14,8 @@ class ConstGenerator
     case type
     when 'int', 'long', 'double', 'boolean'
       "    public static final #{type} #{name} = #{value};\n"
+    when 'decimal'
+      "    public static final BigDecimal #{name} = #{value};\n"
     when 'string'
       "    public static final String #{name} = \"#{value}\";\n"
     when 'date'

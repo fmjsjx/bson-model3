@@ -160,16 +160,16 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_COIN_TOTAL)) {
-            updates.add(Updates.set(path().path(STORE_NAME_COIN_TOTAL), getCoinTotal()));
+            updates.add(Updates.set(path().path(STORE_NAME_COIN_TOTAL), new BsonInt64(getCoinTotal())));
         }
         if (changedFields.get(FIELD_INDEX_COIN_CONSUMED)) {
-            updates.add(Updates.set(path().path(STORE_NAME_COIN_CONSUMED), getCoinConsumed()));
+            updates.add(Updates.set(path().path(STORE_NAME_COIN_CONSUMED), new BsonInt64(getCoinConsumed())));
         }
         if (changedFields.get(FIELD_INDEX_DIAMOND_TOTAL)) {
-            updates.add(Updates.set(path().path(STORE_NAME_DIAMOND_TOTAL), getDiamondTotal()));
+            updates.add(Updates.set(path().path(STORE_NAME_DIAMOND_TOTAL), new BsonInt64(getDiamondTotal())));
         }
         if (changedFields.get(FIELD_INDEX_DIAMOND_CONSUMED)) {
-            updates.add(Updates.set(path().path(STORE_NAME_DIAMOND_CONSUMED), getDiamondConsumed()));
+            updates.add(Updates.set(path().path(STORE_NAME_DIAMOND_CONSUMED), new BsonInt64(getDiamondConsumed())));
         }
     }
 

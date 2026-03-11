@@ -34,7 +34,7 @@ class BooleanPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(boolean #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(boolean #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -45,7 +45,7 @@ class BooleanPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Boolean #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Boolean #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"

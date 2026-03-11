@@ -169,20 +169,22 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         }
         if (changedFields.get(FIELD_INDEX_AVATAR)) {
             var _avatar = getAvatar();
-            var _update = _avatar == null
-                    ? Updates.unset(path().path(STORE_NAME_AVATAR))
-                    : Updates.set(path().path(STORE_NAME_AVATAR), new BsonString(_avatar));
-            updates.add(_update);
+            if (_avatar == null) {
+                updates.add(Updates.unset(path().path(STORE_NAME_AVATAR)));
+            } else {
+                updates.add(Updates.set(path().path(STORE_NAME_AVATAR), new BsonString(_avatar)));
+            }
         }
         if (changedFields.get(FIELD_INDEX_BIRTHDAY)) {
             var _birthday = getBirthday();
-            var _update = _birthday == null
-                    ? Updates.unset(path().path(STORE_NAME_BIRTHDAY))
-                    : Updates.set(path().path(STORE_NAME_BIRTHDAY), BsonValueUtil.toBsonInt32(_birthday));
-            updates.add(_update);
+            if (_birthday == null) {
+                updates.add(Updates.unset(path().path(STORE_NAME_BIRTHDAY)));
+            } else {
+                updates.add(Updates.set(path().path(STORE_NAME_BIRTHDAY), BsonValueUtil.toBsonInt32(_birthday)));
+            }
         }
         if (changedFields.get(FIELD_INDEX_CREATED_TIME)) {
-            updates.add(Updates.set(path().path(STORE_NAME_CREATED_TIME), BsonValueUtil.toBsonDateTime(createdTime)));
+            updates.add(Updates.set(path().path(STORE_NAME_CREATED_TIME), BsonValueUtil.toBsonDateTime(getCreatedTime())));
         }
     }
 

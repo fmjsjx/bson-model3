@@ -2,6 +2,7 @@ package com.github.fmjsjx.bson.model3.core.util;
 
 import com.github.fmjsjx.libcommon.util.DateTimeUtil;
 import org.bson.*;
+import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.Nullable;
 
@@ -25,7 +26,7 @@ public class BsonValueUtil {
      * @param value the {@link BsonValue} to be converted
      * @return the converted {@link LocalDateTime}
      * @throws BsonInvalidOperationException if the specified {@link BsonValue} is not an instance of
-     *                                      {@link BsonDateTime} or {@link BsonTimestamp}
+     *                                       {@link BsonDateTime} or {@link BsonTimestamp}
      */
     public static LocalDateTime toLocalDateTime(BsonValue value) {
         return switch (value) {
@@ -43,7 +44,7 @@ public class BsonValueUtil {
      * @param value the {@link BsonValue} to be converted
      * @return the converted {@link ZonedDateTime}
      * @throws BsonInvalidOperationException if the specified {@link BsonValue} is not an instance of
-     *                                      {@link BsonDateTime} or {@link BsonTimestamp}
+     *                                       {@link BsonDateTime} or {@link BsonTimestamp}
      */
     public static ZonedDateTime toZonedDateTime(BsonValue value) {
         return switch (value) {
@@ -177,6 +178,27 @@ public class BsonValueUtil {
      */
     public static BsonInt32 toBsonInt32(LocalDate date) {
         return new BsonInt32(DateTimeUtil.toNumber(date));
+    }
+
+    /**
+     * Converts the specified {@link LocalTime} to {@link BsonInt32}.
+     *
+     * @param time the {@link LocalTime} to be converted
+     * @return the converted {@link BsonInt32}
+     */
+    public static BsonInt32 toBsonInt32(LocalTime time) {
+        return new BsonInt32(DateTimeUtil.toNumber(time));
+    }
+
+    /**
+     * Converts the specified {@link BigDecimal} to
+     * {@link BsonDecimal128}.
+     *
+     * @param value the {@link BigDecimal} to be converted
+     * @return the converted {@link BsonDecimal128}
+     */
+    public static BsonDecimal128 toBsonDecimal128(BigDecimal value) {
+        return new BsonDecimal128(new Decimal128(value));
     }
 
     /**

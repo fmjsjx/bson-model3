@@ -127,18 +127,18 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         }
         if (changedFields.get(FIELD_INDEX_CUSTOM)) {
             var _custom = getCustom();
-            if (_custom != null) {
-                updates.add(Updates.set(path().path(STORE_NAME_CUSTOM), _custom));
-            } else {
+            if (_custom == null) {
                 updates.add(Updates.unset(path().path(STORE_NAME_CUSTOM)));
+            } else {
+                updates.add(Updates.set(path().path(STORE_NAME_CUSTOM), _custom));
             }
         }
         if (changedFields.get(FIELD_INDEX_FEATURES)) {
             var _features = getFeatures();
-            if (_features != null) {
-                updates.add(Updates.set(path().path(STORE_NAME_FEATURES), BsonValueUtil.toBsonArray(_features, BsonString::new)));
-            } else {
+            if (_features == null) {
                 updates.add(Updates.unset(path().path(STORE_NAME_FEATURES)));
+            } else {
+                updates.add(Updates.set(path().path(STORE_NAME_FEATURES), BsonValueUtil.toBsonArray(_features, BsonString::new)));
             }
         }
         if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {

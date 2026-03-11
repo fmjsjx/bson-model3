@@ -180,19 +180,19 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_ID)) {
-            updates.add(Updates.set(path().path(STORE_NAME_ID), getId()));
+            updates.add(Updates.set(path().path(STORE_NAME_ID), new BsonString(getId())));
         }
         if (changedFields.get(FIELD_INDEX_REF_ID)) {
-            updates.add(Updates.set(path().path(STORE_NAME_REF_ID), getRefId()));
+            updates.add(Updates.set(path().path(STORE_NAME_REF_ID), new BsonInt32(getRefId())));
         }
         if (changedFields.get(FIELD_INDEX_ATK)) {
-            updates.add(Updates.set(path().path(STORE_NAME_ATK), getAtk()));
+            updates.add(Updates.set(path().path(STORE_NAME_ATK), new BsonInt32(getAtk())));
         }
         if (changedFields.get(FIELD_INDEX_DEF)) {
-            updates.add(Updates.set(path().path(STORE_NAME_DEF), getDef()));
+            updates.add(Updates.set(path().path(STORE_NAME_DEF), new BsonInt32(getDef())));
         }
         if (changedFields.get(FIELD_INDEX_HP)) {
-            updates.add(Updates.set(path().path(STORE_NAME_HP), getHp()));
+            updates.add(Updates.set(path().path(STORE_NAME_HP), new BsonInt32(getHp())));
         }
     }
 

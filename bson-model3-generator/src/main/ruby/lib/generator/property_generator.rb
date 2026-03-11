@@ -10,6 +10,8 @@ class PropertyGenerator
         LongPropertyGenerator.new(config, model_conf, field_conf)
       when 'double'
         DoublePropertyGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        DecimalPropertyGenerator.new(config, model_conf, field_conf)
       when 'boolean'
         BooleanPropertyGenerator.new(config, model_conf, field_conf)
       when 'string'
@@ -114,6 +116,7 @@ end
 require_relative 'properties/int_property_generator'
 require_relative 'properties/long_property_generator'
 require_relative 'properties/double_property_generator'
+require_relative 'properties/decimal_property_generator'
 require_relative 'properties/boolean_property_generator'
 require_relative 'properties/string_property_generator'
 require_relative 'properties/date_property_generator'

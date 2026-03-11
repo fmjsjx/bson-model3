@@ -488,6 +488,8 @@ class ConstGenerator
     case type
     when 'int', 'long', 'double', 'boolean'
       "    public static final #{type} #{name} = #{value};\n"
+    when 'decimal'
+      "    public static final BigDecimal #{name} = #{value};\n"
     when 'string'
       "    public static final String #{name} = \"#{value}\";\n"
     when 'date'
@@ -929,6 +931,8 @@ class PropertyGenerator
         LongPropertyGenerator.new(config, model_conf, field_conf)
       when 'double'
         DoublePropertyGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        DecimalPropertyGenerator.new(config, model_conf, field_conf)
       when 'boolean'
         BooleanPropertyGenerator.new(config, model_conf, field_conf)
       when 'string'
@@ -1044,6 +1048,8 @@ class DefaultValue
         LongDefaultValue.instance
       when 'double'
         DoubleDefaultValue.instance
+      when 'decimal'
+        DecimalDefaultValue.instance
       when 'boolean'
         BooleanDefaultValue.instance
       when 'string'
@@ -1117,6 +1123,33 @@ class DoubleDefaultValue < DefaultValue
       'Double.MAX_VALUE'
     else
       field_conf.default
+    end
+  end
+
+end
+
+
+
+class DecimalDefaultValue < DefaultValue
+
+  @@instance = DecimalDefaultValue.new
+
+  class << self
+    def instance
+      @@instance
+    end
+  end
+
+  def generate_code(config, model_conf, field_conf)
+    case field_conf.default.upcase
+    when 'ZERO'
+      'BigDecimal.ZERO'
+    when 'ONE'
+      'BigDecimal.ONE'
+    when 'TEN'
+      'BigDecimal.TEN'
+    else
+      "new BigDecimal(\"#{field_conf.default}\")"
     end
   end
 
@@ -1331,7 +1364,7 @@ class IntPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(int #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(int #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1342,7 +1375,7 @@ class IntPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Integer #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Integer #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1416,7 +1449,7 @@ class LongPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(long #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(long #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1427,7 +1460,7 @@ class LongPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Long #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Long #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1503,7 +1536,7 @@ class DoublePropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(double #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(double #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1514,7 +1547,7 @@ class DoublePropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Double #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Double #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1530,6 +1563,71 @@ class DoublePropertyGenerator < PropertyGenerator
   private
   def default_value_code
     DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class DecimalPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private BigDecimal #{name} = #{default_value_code};\n"
+      else
+        "    private BigDecimal #{name} = BigDecimal.ZERO;\n"
+      end
+    else
+      "    private @Nullable BigDecimal #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public BigDecimal #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable BigDecimal #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(BigDecimal #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable BigDecimal #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1568,7 +1666,7 @@ class BooleanPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(boolean #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(boolean #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1579,7 +1677,7 @@ class BooleanPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Boolean #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Boolean #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1633,7 +1731,7 @@ class StringPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(String #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(String #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1644,7 +1742,7 @@ class StringPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable String #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable String #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1698,7 +1796,7 @@ class DatePropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(LocalDate #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(LocalDate #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1709,7 +1807,7 @@ class DatePropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable LocalDate #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalDate #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1763,7 +1861,7 @@ class TimePropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(LocalTime #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(LocalTime #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1774,7 +1872,7 @@ class TimePropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable LocalTime #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalTime #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1828,7 +1926,7 @@ class DateTimePropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(LocalDateTime #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(LocalDateTime #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1839,7 +1937,7 @@ class DateTimePropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable LocalDateTime #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalDateTime #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1889,7 +1987,7 @@ class ObjectIdPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(ObjectId #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(ObjectId #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1900,7 +1998,7 @@ class ObjectIdPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable ObjectId #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable ObjectId #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1949,7 +2047,7 @@ class UuidPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(UUID #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(UUID #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -1960,7 +2058,7 @@ class UuidPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable UUID #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable UUID #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -2010,7 +2108,7 @@ class ObjectPropertyGenerator < PropertyGenerator
 
   def generate_setter_code
     code = ''
-    code << "    public void set#{field_conf.camel_case_name}(@Nullable #{field_conf.model} #{name}) {\n"
+    code << "    public void #{field_conf.setter_name}(@Nullable #{field_conf.model} #{name}) {\n"
     if store_field?
       code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
       code << "            if (#{name} != null) {\n"
@@ -2067,7 +2165,7 @@ class StdListPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(List<@Nullable #{value_type}> #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(List<@Nullable #{value_type}> #{name}) {\n"
       if store_field?
         code << "        if (!#{name}.equals(this.#{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -2078,7 +2176,7 @@ class StdListPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable List<@Nullable #{value_type}> #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable List<@Nullable #{value_type}> #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -2176,7 +2274,7 @@ class MapPropertyGenerator < PropertyGenerator
 
   def generate_setter_code
     code = ''
-    code << "    public void set#{field_conf.camel_case_name}(@Nullable #{generic_type} #{name}) {\n"
+    code << "    public void #{field_conf.setter_name}(@Nullable #{generic_type} #{name}) {\n"
     if store_field?
       code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
       code << "            if (#{name} != null) {\n"
@@ -2352,6 +2450,8 @@ class CleanFieldGenerator
         CleanLongFieldGenerator.new(config, model_conf, field_conf)
       when 'double'
         CleanDoubleFieldGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        CleanDecimalFieldGenerator.new(config, model_conf, field_conf)
       when 'boolean'
         CleanBooleanFieldGenerator.new(config, model_conf, field_conf)
       when 'string'
@@ -2493,6 +2593,29 @@ class CleanDoubleFieldGenerator < CleanFieldGenerator
 
 end
 
+
+
+
+class CleanDecimalFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = BigDecimal.ZERO;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
 
 
 
@@ -2678,7 +2801,7 @@ class CleanFieldsGenerator
   end
 
   def generate
-    code = "\n"
+    code = ''
     code << "    @Override\n"
     code << "    protected #{@model_conf.name} cleanFields() {\n"
     @clean_field_generators.each do |clean_field_generator|
@@ -2691,6 +2814,327 @@ class CleanFieldsGenerator
 end
 
 
+
+class AppendFieldUpdateGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        AppendIntFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        AppendLongFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        AppendDoubleFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        AppendDecimalFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        AppendBooleanFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        AppendStringFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        AppendDateFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        AppendTimeFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        AppendDatetimeFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        AppendObjectIdFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        AppendUuidFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        AppendStdListFieldUpdateGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    code = ''
+    code << "        if (changedFields.get(#{@field_conf.field_index_const_name})) {\n"
+    if @field_conf.required?
+      code << generate_required_code
+    else
+      code << generate_optional_code
+    end
+    code << "        }\n"
+  end
+
+  def generate_required_code
+    "            #{@field_conf.getter_name}().appendUpdates(updates);\n"
+  end
+
+  def generate_optional_code
+    code = ''
+    code << "            var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "            if (#{@temp_field_name} == null) {\n"
+    code << "                updates.add(Updates.unset(path().path(#{@field_conf.store_name_const_name})));\n"
+    code << "            } else {\n"
+    code << generate_optional_append_update_code
+    code << "            }\n"
+  end
+
+  def generate_optional_append_update_code
+    "                #{@temp_field_name}.appendUpdates(updates);\n"
+  end
+
+end
+
+
+
+
+class AppendIntFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendLongFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt64(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt64(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDoubleFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonDouble(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonDouble(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDecimalFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDecimal128(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDecimal128(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendBooleanFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonBoolean.valueOf(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonBoolean.valueOf(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendStringFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonString(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonString(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDateFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendTimeFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDatetimeFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDateTime(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDateTime(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendObjectIdFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonObjectId(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonObjectId(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendUuidFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), #{to_bson_value_code("#{field_conf.getter_name}()")}));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), #{to_bson_value_code(temp_field_name)}));\n"
+  end
+
+  private
+  def to_bson_value_code(variable_name)
+    if field_conf.has_modifier?('legacy')
+      "new BsonBinary(#{variable_name}, UuidRepresentation.JAVA_LEGACY)"
+    else
+      "new BsonBinary(#{variable_name})"
+    end
+  end
+
+end
+
+
+
+class AppendStdListFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonArray(#{field_conf.getter_name}(), #{map_to_bson_value_code})));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonArray(#{temp_field_name}, #{map_to_bson_value_code})));\n"
+  end
+
+  private
+  def map_to_bson_value_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      "BsonInt32::new"
+    when 'long'
+      "BsonInt64::new"
+    when 'double'
+      "BsonDouble::new"
+    when 'decimal'
+      "BsonValueUtil::toBsonDecimal128"
+    when 'string'
+      "BsonString::new"
+    when 'date'
+      'BsonValueUtil::toBsonInt32'
+    when 'time'
+      'BsonValueUtil::toBsonInt32'
+    when 'datetime'
+      'BsonValueUtil::toBsonDateTime'
+    when 'object-id'
+      'BsonObjectId::new'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> new BsonBinary(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonBinary::new'
+      end
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+
+
+
+class AppendFieldUpdatesGenerator
+
+  attr_reader :config, :model_conf, :append_field_update_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @append_field_update_generators = model_conf.fields.filter do |field_conf|
+      field_conf.store_field?
+    end.map do |field_conf|
+      AppendFieldUpdateGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    protected void appendFieldUpdates(List<Bson> updates) {\n"
+    code << "        var changedFields = this.changedFields;\n"
+    code << "        if (changedFields.isEmpty()) {\n"
+    code << "            return;\n"
+    code << "        }\n"
+    @append_field_update_generators.each do |append_field_update_generator|
+      code << append_field_update_generator.generate
+    end
+    code << "    }\n"
+  end
+
+end
 
 
 
@@ -2715,6 +3159,7 @@ class ModelGenerator
     @properties_generator = PropertiesGenerator.new(@config, @model_conf)
     @has_children = @store_fields.any? { |field_conf| field_conf.has_children? }
     @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
+    @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -2784,6 +3229,7 @@ class ModelGenerator
       code << generate_reset_children_code
     end
     code << generate_clean_fields_code
+    code << generate_append_field_updates_code
     # TODO generate other methods
   end
 
@@ -2809,7 +3255,13 @@ class ModelGenerator
   end
 
   def generate_clean_fields_code
-    @clean_fields_generator.generate
+    code = "\n"
+    code << @clean_fields_generator.generate
+  end
+
+  def generate_append_field_updates_code
+    code = "\n"
+    code << @append_field_updates_generator.generate
   end
 
   def generate_class_suffix_code

@@ -34,7 +34,7 @@ class IntPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(int #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(int #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -45,7 +45,7 @@ class IntPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Integer #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Integer #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"

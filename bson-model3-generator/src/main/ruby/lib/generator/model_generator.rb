@@ -3,6 +3,7 @@ require_relative 'consts_generator'
 require_relative 'store_data'
 require_relative 'properties_generator'
 require_relative 'clean_fields_generator'
+require_relative 'append_field_updates_generator'
 
 
 class ModelGenerator
@@ -26,6 +27,7 @@ class ModelGenerator
     @properties_generator = PropertiesGenerator.new(@config, @model_conf)
     @has_children = @store_fields.any? { |field_conf| field_conf.has_children? }
     @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
+    @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -95,6 +97,7 @@ class ModelGenerator
       code << generate_reset_children_code
     end
     code << generate_clean_fields_code
+    code << generate_append_field_updates_code
     # TODO generate other methods
   end
 
@@ -120,7 +123,13 @@ class ModelGenerator
   end
 
   def generate_clean_fields_code
-    @clean_fields_generator.generate
+    code = "\n"
+    code << @clean_fields_generator.generate
+  end
+
+  def generate_append_field_updates_code
+    code = "\n"
+    code << @append_field_updates_generator.generate
   end
 
   def generate_class_suffix_code

@@ -266,7 +266,7 @@ public final class Player extends AbstractRootModel<Player> {
             return;
         }
         if (changedFields.get(FIELD_INDEX_ID)) {
-            updates.add(Updates.set(STORE_NAME_ID, new BsonInt64(getId())));
+            updates.add(Updates.set(path().path(STORE_NAME_ID), new BsonInt64(getId())));
         }
         if (changedFields.get(FIELD_INDEX_BASIC_INFO)) {
             getBasicInfo().appendUpdates(updates);

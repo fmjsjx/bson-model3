@@ -34,7 +34,7 @@ class LongPropertyGenerator < PropertyGenerator
   def generate_setter_code
     code = ''
     if required?
-      code << "    public void set#{field_conf.camel_case_name}(long #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(long #{name}) {\n"
       if store_field?
         code << "        if (#{name} != this.#{name}) {\n"
         code << "            this.#{name} = #{name};\n"
@@ -45,7 +45,7 @@ class LongPropertyGenerator < PropertyGenerator
       end
       code << "    }\n"
     else
-      code << "    public void set#{field_conf.camel_case_name}(@Nullable Long #{name}) {\n"
+      code << "    public void #{field_conf.setter_name}(@Nullable Long #{name}) {\n"
       if store_field?
         code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
         code << "            this.#{name} = #{name};\n"

@@ -51,7 +51,7 @@ class MapPropertyGenerator < PropertyGenerator
 
   def generate_setter_code
     code = ''
-    code << "    public void set#{field_conf.camel_case_name}(@Nullable #{generic_type} #{name}) {\n"
+    code << "    public void #{field_conf.setter_name}(@Nullable #{generic_type} #{name}) {\n"
     if store_field?
       code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
       code << "            if (#{name} != null) {\n"

@@ -10,6 +10,8 @@ class CleanFieldGenerator
         CleanLongFieldGenerator.new(config, model_conf, field_conf)
       when 'double'
         CleanDoubleFieldGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        CleanDecimalFieldGenerator.new(config, model_conf, field_conf)
       when 'boolean'
         CleanBooleanFieldGenerator.new(config, model_conf, field_conf)
       when 'string'
@@ -84,6 +86,7 @@ end
 require_relative 'clean/clean_int_field_generator'
 require_relative 'clean/clean_long_field_generator'
 require_relative 'clean/clean_double_field_generator'
+require_relative 'clean/clean_decimal_field_generator'
 require_relative 'clean/clean_boolean_field_generator'
 require_relative 'clean/clean_string_field_generator'
 require_relative 'clean/clean_date_field_generator'

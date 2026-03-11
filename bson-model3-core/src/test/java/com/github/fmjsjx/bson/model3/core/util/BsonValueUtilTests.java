@@ -105,6 +105,34 @@ public class BsonValueUtilTests {
     }
 
     @Test
+    public void testToBsonInt32LocalTime() {
+        // 测试正常时间
+        LocalTime time = LocalTime.of(14, 30, 45);
+        BsonInt32 bson = BsonValueUtil.toBsonInt32(time);
+        assertEquals(143045, bson.getValue());
+
+        // 测试午夜
+        LocalTime midnight = LocalTime.MIDNIGHT;
+        BsonInt32 bsonMidnight = BsonValueUtil.toBsonInt32(midnight);
+        assertEquals(0, bsonMidnight.getValue());
+
+        // 测试最大时间
+        LocalTime maxTime = LocalTime.MAX;
+        BsonInt32 bsonMax = BsonValueUtil.toBsonInt32(maxTime);
+        assertEquals(235959, bsonMax.getValue());
+
+        // 测试只有小时
+        LocalTime hourOnly = LocalTime.of(8, 0, 0);
+        BsonInt32 bsonHour = BsonValueUtil.toBsonInt32(hourOnly);
+        assertEquals(80000, bsonHour.getValue());
+
+        // 测试小时和分钟
+        LocalTime hourMinute = LocalTime.of(9, 30, 0);
+        BsonInt32 bsonHourMinute = BsonValueUtil.toBsonInt32(hourMinute);
+        assertEquals(93000, bsonHourMinute.getValue());
+    }
+
+    @Test
     public void testToBsonArray() {
         List<String> list = List.of("a", "b");
         BsonArray array = BsonValueUtil.toBsonArray(list, BsonString::new);
@@ -236,6 +264,39 @@ public class BsonValueUtilTests {
         UUID uuid = UUID.randomUUID();
         assertEquals(uuid, BsonValueUtil.toUuid(new BsonBinary(uuid)));
         assertEquals(uuid, BsonValueUtil.toUuid(new BsonBinary(uuid), UuidRepresentation.STANDARD));
+    }
+
+    @Test
+    public void testToBsonDecimal128() {
+        // 测试普通整数
+        BigDecimal intValue = new BigDecimal("123");
+        BsonDecimal128 bsonInt = BsonValueUtil.toBsonDecimal128(intValue);
+        assertEquals(intValue, bsonInt.getValue().bigDecimalValue());
+
+        // 测试零值
+        BigDecimal zero = BigDecimal.ZERO;
+        BsonDecimal128 bsonZero = BsonValueUtil.toBsonDecimal128(zero);
+        assertEquals(zero, bsonZero.getValue().bigDecimalValue());
+
+        // 测试负数
+        BigDecimal negative = new BigDecimal("-456.78");
+        BsonDecimal128 bsonNegative = BsonValueUtil.toBsonDecimal128(negative);
+        assertEquals(negative, bsonNegative.getValue().bigDecimalValue());
+
+        // 测试小数
+        BigDecimal decimal = new BigDecimal("123.456789");
+        BsonDecimal128 bsonDecimal = BsonValueUtil.toBsonDecimal128(decimal);
+        assertEquals(decimal, bsonDecimal.getValue().bigDecimalValue());
+
+        // 测试大数值（Decimal128 最多支持34位有效数字）
+        BigDecimal large = new BigDecimal("99999999999999999999.99999999999999");
+        BsonDecimal128 bsonLarge = BsonValueUtil.toBsonDecimal128(large);
+        assertEquals(large, bsonLarge.getValue().bigDecimalValue());
+
+        // 测试一位小数
+        BigDecimal smallDecimal = new BigDecimal("0.1");
+        BsonDecimal128 bsonSmallDecimal = BsonValueUtil.toBsonDecimal128(smallDecimal);
+        assertEquals(smallDecimal, bsonSmallDecimal.getValue().bigDecimalValue());
     }
 
 }

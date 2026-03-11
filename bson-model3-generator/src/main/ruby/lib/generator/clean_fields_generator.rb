@@ -16,7 +16,7 @@ class CleanFieldsGenerator
   end
 
   def generate
-    code = "\n"
+    code = ''
     code << "    @Override\n"
     code << "    protected #{@model_conf.name} cleanFields() {\n"
     @clean_field_generators.each do |clean_field_generator|

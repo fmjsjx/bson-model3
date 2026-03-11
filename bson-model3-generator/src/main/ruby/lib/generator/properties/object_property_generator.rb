@@ -34,7 +34,7 @@ class ObjectPropertyGenerator < PropertyGenerator
 
   def generate_setter_code
     code = ''
-    code << "    public void set#{field_conf.camel_case_name}(@Nullable #{field_conf.model} #{name}) {\n"
+    code << "    public void #{field_conf.setter_name}(@Nullable #{field_conf.model} #{name}) {\n"
     if store_field?
       code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
       code << "            if (#{name} != null) {\n"
