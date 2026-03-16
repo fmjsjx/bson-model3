@@ -1,7 +1,7 @@
 require_relative '../append_updated_field_data_generator'
 
 
-class AppendUpdatedBooleanDataGenerator < AppendUpdatedFieldDataGenerator
+class AppendUpdatedSimpleDataGenerator < AppendUpdatedFieldDataGenerator
 
   def generate_append_code
     code = ''

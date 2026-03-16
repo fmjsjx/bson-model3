@@ -4,18 +4,8 @@ class AppendUpdatedFieldDataGenerator
 
     def from(field_conf, config, model_conf)
       case field_conf.type
-      when 'int'
-        AppendUpdatedIntDataGenerator.new(config, model_conf, field_conf)
-      when 'long'
-        AppendUpdatedLongDataGenerator.new(config, model_conf, field_conf)
-      when 'double'
-        AppendUpdatedDoubleDataGenerator.new(config, model_conf, field_conf)
-      when 'decimal'
-        AppendUpdatedDecimalDataGenerator.new(config, model_conf, field_conf)
-      when 'boolean'
-        AppendUpdatedBooleanDataGenerator.new(config, model_conf, field_conf)
-      when 'string'
-        AppendUpdatedStringDataGenerator.new(config, model_conf, field_conf)
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        AppendUpdatedSimpleDataGenerator.new(config, model_conf, field_conf)
       when 'date'
         AppendUpdatedDateDataGenerator.new(config, model_conf, field_conf)
       when 'time'
@@ -62,15 +52,10 @@ class AppendUpdatedFieldDataGenerator
 end
 
 
-require_relative 'append_updated_data/append_updated_int_data_generator'
-require_relative 'append_updated_data/append_updated_long_data_generator'
-require_relative 'append_updated_data/append_updated_double_data_generator'
-require_relative 'append_updated_data/append_updated_decimal_data_generator'
-require_relative 'append_updated_data/append_updated_boolean_data_generator'
-require_relative 'append_updated_data/append_updated_string_data_generator'
+require_relative 'append_updated_data/append_updated_simple_data_generator'
 require_relative 'append_updated_data/append_updated_date_data_generator'
 require_relative 'append_updated_data/append_updated_time_data_generator'
-require_relative 'append_updated_data/append_updated_datetime_data_generator'
+require_relative 'append_updated_data/append_updated_date_time_data_generator'
 require_relative 'append_updated_data/append_updated_object_id_data_generator'
 require_relative 'append_updated_data/append_updated_uuid_data_generator'
 require_relative 'append_updated_data/append_updated_std_list_data_generator'

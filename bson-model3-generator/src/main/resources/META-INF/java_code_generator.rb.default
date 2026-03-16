@@ -3142,18 +3142,8 @@ class AppendUpdatedFieldDataGenerator
 
     def from(field_conf, config, model_conf)
       case field_conf.type
-      when 'int'
-        AppendUpdatedIntDataGenerator.new(config, model_conf, field_conf)
-      when 'long'
-        AppendUpdatedLongDataGenerator.new(config, model_conf, field_conf)
-      when 'double'
-        AppendUpdatedDoubleDataGenerator.new(config, model_conf, field_conf)
-      when 'decimal'
-        AppendUpdatedDecimalDataGenerator.new(config, model_conf, field_conf)
-      when 'boolean'
-        AppendUpdatedBooleanDataGenerator.new(config, model_conf, field_conf)
-      when 'string'
-        AppendUpdatedStringDataGenerator.new(config, model_conf, field_conf)
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        AppendUpdatedSimpleDataGenerator.new(config, model_conf, field_conf)
       when 'date'
         AppendUpdatedDateDataGenerator.new(config, model_conf, field_conf)
       when 'time'
@@ -3202,97 +3192,7 @@ end
 
 
 
-class AppendUpdatedIntDataGenerator < AppendUpdatedFieldDataGenerator
-
-  def generate_append_code
-    code = ''
-    if field_conf.required?
-      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
-    else
-      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
-      code << "            if (#{temp_field_name} != null) {\n"
-      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
-      code << "            }\n"
-    end
-  end
-
-end
-
-
-
-class AppendUpdatedLongDataGenerator < AppendUpdatedFieldDataGenerator
-
-  def generate_append_code
-    code = ''
-    if field_conf.required?
-      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
-    else
-      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
-      code << "            if (#{temp_field_name} != null) {\n"
-      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
-      code << "            }\n"
-    end
-  end
-
-end
-
-
-
-class AppendUpdatedDoubleDataGenerator < AppendUpdatedFieldDataGenerator
-
-  def generate_append_code
-    code = ''
-    if field_conf.required?
-      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
-    else
-      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
-      code << "            if (#{temp_field_name} != null) {\n"
-      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
-      code << "            }\n"
-    end
-  end
-
-end
-
-
-
-class AppendUpdatedDecimalDataGenerator < AppendUpdatedFieldDataGenerator
-
-  def generate_append_code
-    code = ''
-    if field_conf.required?
-      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
-    else
-      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
-      code << "            if (#{temp_field_name} != null) {\n"
-      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
-      code << "            }\n"
-    end
-  end
-
-end
-
-
-
-class AppendUpdatedBooleanDataGenerator < AppendUpdatedFieldDataGenerator
-
-  def generate_append_code
-    code = ''
-    if field_conf.required?
-      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
-    else
-      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
-      code << "            if (#{temp_field_name} != null) {\n"
-      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
-      code << "            }\n"
-    end
-  end
-
-end
-
-
-
-class AppendUpdatedStringDataGenerator < AppendUpdatedFieldDataGenerator
+class AppendUpdatedSimpleDataGenerator < AppendUpdatedFieldDataGenerator
 
   def generate_append_code
     code = ''
@@ -3469,6 +3369,218 @@ class AppendUpdatedDataGenerator
 
 end
 
+class ToDisplayFieldDataGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        ToDisplaySimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToDisplayDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToDisplayTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToDisplayDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToDisplayObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToDisplayUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToDisplayStdListDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.transient? or @field_conf.readonly? or not @field_conf.required?
+      generate_optional_display_data_code
+    else
+      generate_required_display_data_code
+    end
+  end
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{@field_conf.display_name_const_name}, #{@field_conf.getter_name}().toDisplayData());\n"
+  end
+
+  def generate_optional_display_data_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_display_data_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{@field_conf.display_name_const_name}, #{@temp_field_name}.toDisplayData());\n"
+  end
+
+end
+
+
+
+
+class ToDisplaySimpleDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToDisplayDateDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+  end
+
+end
+
+
+
+class ToDisplayTimeDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.TIME_FORMATTER));\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.TIME_FORMATTER));\n"
+  end
+
+end
+
+
+
+class ToDisplayDateTimeDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.DATETIME_FORMATTER));\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.DATETIME_FORMATTER));\n"
+  end
+
+end
+
+
+
+class ToDisplayObjectIdDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toHexString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toHexString());\n"
+  end
+
+end
+
+
+
+class ToDisplayUuidDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+  end
+
+end
+
+
+
+class ToDisplayStdListDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}()#{value_map_code});\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}#{value_map_code});\n"
+  end
+
+  private
+  def value_map_code
+    case field_conf.value
+    when 'object'
+      ".stream().map(#{field_conf.model}::toDisplayData).toList()"
+    when 'date'
+      ".stream().map(LocalDate::toString).toList()"
+    when 'time'
+      ".stream().map(BsonModelConstants.TIME_FORMATTER::format).toList()"
+    when 'datetime'
+      ".stream().map(BsonModelConstants.DATETIME_FORMATTER::format).toList()"
+    when 'object-id'
+      ".stream().map(ObjectId::toHexString).toList()"
+    when 'uuid'
+      ".stream().map(UUID::toString).toList()"
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+
+class ToDisplayDataGenerator
+
+  attr_reader :config, :model_conf, :to_display_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @to_display_field_data_generators = model_conf.fields.filter do |field_conf|
+      not field_conf.hidden?
+    end.map do |field_conf|
+      ToDisplayFieldDataGenerator.from(field_conf, config, model_conf)
+    end
+  end
+
+  def generate
+    code =''
+    code << "    @Override\n"
+    code << "    public Map<String, ?> toDisplayData() {\n"
+    code << "        var _displayData = new LinkedHashMap<String, Object>();\n"
+    @to_display_field_data_generators.each do |to_display_field_data_generator|
+      code << to_display_field_data_generator.generate
+    end
+    code << "        return _displayData;\n"
+    code << "    }\n"
+  end
+
+end
+
 
 
 class ModelGenerator
@@ -3480,7 +3592,10 @@ class ModelGenerator
               :imports_generator,
               :consts_generator,
               :properties_generator,
-              :clean_fields_generator
+              :clean_fields_generator,
+              :append_field_updates_generator,
+              :append_updated_data_generator,
+              :to_display_data_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -3494,6 +3609,7 @@ class ModelGenerator
     @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
     @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
     @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
+    @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -3565,6 +3681,7 @@ class ModelGenerator
     code << generate_clean_fields_code
     code << generate_append_field_updates_code
     code << generate_append_updated_data_code
+    code << generate_to_display_data_code
     # TODO generate other methods
   end
 
@@ -3602,6 +3719,11 @@ class ModelGenerator
   def generate_append_updated_data_code
     code = "\n"
     code << @append_updated_data_generator.generate
+  end
+
+  def generate_to_display_data_code
+    code = "\n"
+    code << @to_display_data_generator.generate
   end
 
   def generate_class_suffix_code
