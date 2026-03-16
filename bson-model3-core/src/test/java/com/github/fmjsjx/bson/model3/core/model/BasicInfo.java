@@ -242,7 +242,7 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         if (_birthday != null) {
             _bsonValue.append(STORE_NAME_BIRTHDAY, BsonValueUtil.toBsonInt32(_birthday));
         }
-        _bsonValue.append(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(createdTime));
+        _bsonValue.append(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(getCreatedTime()));
         return _bsonValue;
     }
 

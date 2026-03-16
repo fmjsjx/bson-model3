@@ -6,6 +6,7 @@ require_relative 'clean_fields_generator'
 require_relative 'append_field_updates_generator'
 require_relative 'append_updated_data_generator'
 require_relative 'to_display_data_generator'
+require_relative 'to_bson_value_generator'
 
 
 class ModelGenerator
@@ -20,7 +21,8 @@ class ModelGenerator
               :clean_fields_generator,
               :append_field_updates_generator,
               :append_updated_data_generator,
-              :to_display_data_generator
+              :to_display_data_generator,
+              :to_bson_value_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -35,6 +37,7 @@ class ModelGenerator
     @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
     @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
     @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
+    @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -107,6 +110,7 @@ class ModelGenerator
     code << generate_append_field_updates_code
     code << generate_append_updated_data_code
     code << generate_to_display_data_code
+    code << generate_to_bson_value_code
     # TODO generate other methods
   end
 
@@ -149,6 +153,11 @@ class ModelGenerator
   def generate_to_display_data_code
     code = "\n"
     code << @to_display_data_generator.generate
+  end
+
+  def generate_to_bson_value_code
+    code = "\n"
+    code << @to_bson_value_generator.generate
   end
 
   def generate_class_suffix_code

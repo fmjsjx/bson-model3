@@ -3581,6 +3581,321 @@ class ToDisplayDataGenerator
 
 end
 
+class ToBsonFieldValueGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int'
+        ToBsonIntValueGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        ToBsonLongValueGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        ToBsonDoubleValueGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        ToBsonDecimalValueGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        ToBsonBooleanValueGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        ToBsonStringValueGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToBsonDateValueGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToBsonTimeValueGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToBsonDateTimeValueGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToBsonObjectIdValueGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToBsonUuidValueGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToBsonStdListValueGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required?
+      generate_required_bson_value_code
+    else
+      generate_optional_bson_value_code
+    end
+  end
+
+  def generate_required_bson_value_code
+    "        _bsonValue.append(#{@field_conf.store_name_const_name}, #{@field_conf.getter_name}().toBsonValue());\n"
+  end
+
+  def generate_optional_bson_value_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_bson_value_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.append(#{@field_conf.store_name_const_name}, #{@temp_field_name}.toBsonValue());\n"
+  end
+
+end
+
+
+
+
+class ToBsonIntValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonLongValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt64(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt64(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDoubleValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonDouble(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonDouble(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDecimalValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDecimal128(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDecimal128(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonBooleanValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonBoolean.valueOf(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonBoolean.valueOf(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonStringValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonString(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonString(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDateValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonTimeValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDateTimeValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDateTime(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDateTime(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonObjectIdValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonObjectId(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonObjectId(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonUuidValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, #{to_bson_value_code("#{field_conf.getter_name}()")});\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, #{to_bson_value_code(temp_field_name)});\n"
+  end
+
+  private
+  def to_bson_value_code(variable_name)
+    if field_conf.has_modifier?('legacy')
+      "new BsonBinary(#{variable_name}, UuidRepresentation.JAVA_LEGACY)"
+    else
+      "new BsonBinary(#{variable_name})"
+    end
+  end
+
+end
+
+
+
+class ToBsonStdListValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonArray(#{field_conf.getter_name}(), #{map_to_bson_value_code}));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonArray(#{temp_field_name}, #{map_to_bson_value_code}));\n"
+  end
+
+  private
+
+  def map_to_bson_value_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      "BsonInt32::new"
+    when 'long'
+      "BsonInt64::new"
+    when 'double'
+      "BsonDouble::new"
+    when 'decimal'
+      "BsonValueUtil::toBsonDecimal128"
+    when 'string'
+      "BsonString::new"
+    when 'date'
+      'BsonValueUtil::toBsonInt32'
+    when 'time'
+      'BsonValueUtil::toBsonInt32'
+    when 'datetime'
+      'BsonValueUtil::toBsonDateTime'
+    when 'object-id'
+      'BsonObjectId::new'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> new BsonBinary(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonBinary::new'
+      end
+    else
+      raise ArgumentError, "Unsupported value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+
+class ToBsonValueGenerator
+
+  attr_reader :config, :model_conf, :to_bson_field_value_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @to_bson_field_value_generators = model_conf.fields.filter do |field_conf|
+      field_conf.store_field?
+    end.map do |field_conf|
+      ToBsonFieldValueGenerator.from(field_conf, config, model_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public BsonDocument toBsonValue() {\n"
+    code << "        var _bsonValue = new BsonDocument();\n"
+    @to_bson_field_value_generators.each do |to_bson_field_value_generator|
+      code << to_bson_field_value_generator.generate
+    end
+    code << "        return _bsonValue;\n"
+    code << "    }\n"
+  end
+
+end
+
 
 
 class ModelGenerator
@@ -3595,7 +3910,8 @@ class ModelGenerator
               :clean_fields_generator,
               :append_field_updates_generator,
               :append_updated_data_generator,
-              :to_display_data_generator
+              :to_display_data_generator,
+              :to_bson_value_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -3610,6 +3926,7 @@ class ModelGenerator
     @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
     @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
     @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
+    @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -3682,6 +3999,7 @@ class ModelGenerator
     code << generate_append_field_updates_code
     code << generate_append_updated_data_code
     code << generate_to_display_data_code
+    code << generate_to_bson_value_code
     # TODO generate other methods
   end
 
@@ -3724,6 +4042,11 @@ class ModelGenerator
   def generate_to_display_data_code
     code = "\n"
     code << @to_display_data_generator.generate
+  end
+
+  def generate_to_bson_value_code
+    code = "\n"
+    code << @to_bson_value_generator.generate
   end
 
   def generate_class_suffix_code
