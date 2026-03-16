@@ -1,0 +1,76 @@
+class AppendUpdatedFieldDataGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int'
+        AppendUpdatedIntDataGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        AppendUpdatedLongDataGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        AppendUpdatedDoubleDataGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        AppendUpdatedDecimalDataGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        AppendUpdatedBooleanDataGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        AppendUpdatedStringDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        AppendUpdatedDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        AppendUpdatedTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        AppendUpdatedDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        AppendUpdatedObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        AppendUpdatedUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        AppendUpdatedStdListDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    code = ''
+    code << "        if (changedFields.get(#{@field_conf.field_index_const_name})) {\n"
+    code << generate_append_code
+    code << "        }\n"
+  end
+
+  def generate_append_code
+    code = ''
+    code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
+    code << "            if (#{@temp_field_name} != null) {\n"
+    code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
+    code << "            }\n"
+  end
+
+end
+
+
+require_relative 'append_updated_data/append_updated_int_data_generator'
+require_relative 'append_updated_data/append_updated_long_data_generator'
+require_relative 'append_updated_data/append_updated_double_data_generator'
+require_relative 'append_updated_data/append_updated_decimal_data_generator'
+require_relative 'append_updated_data/append_updated_boolean_data_generator'
+require_relative 'append_updated_data/append_updated_string_data_generator'
+require_relative 'append_updated_data/append_updated_date_data_generator'
+require_relative 'append_updated_data/append_updated_time_data_generator'
+require_relative 'append_updated_data/append_updated_datetime_data_generator'
+require_relative 'append_updated_data/append_updated_object_id_data_generator'
+require_relative 'append_updated_data/append_updated_uuid_data_generator'
+require_relative 'append_updated_data/append_updated_std_list_data_generator'

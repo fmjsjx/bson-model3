@@ -4,6 +4,7 @@ require_relative 'store_data'
 require_relative 'properties_generator'
 require_relative 'clean_fields_generator'
 require_relative 'append_field_updates_generator'
+require_relative 'append_updated_data_generator'
 
 
 class ModelGenerator
@@ -28,6 +29,7 @@ class ModelGenerator
     @has_children = @store_fields.any? { |field_conf| field_conf.has_children? }
     @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
     @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
+    @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -98,6 +100,7 @@ class ModelGenerator
     end
     code << generate_clean_fields_code
     code << generate_append_field_updates_code
+    code << generate_append_updated_data_code
     # TODO generate other methods
   end
 
@@ -130,6 +133,11 @@ class ModelGenerator
   def generate_append_field_updates_code
     code = "\n"
     code << @append_field_updates_generator.generate
+  end
+
+  def generate_append_updated_data_code
+    code = "\n"
+    code << @append_updated_data_generator.generate
   end
 
   def generate_class_suffix_code

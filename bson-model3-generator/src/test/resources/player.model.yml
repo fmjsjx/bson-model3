@@ -67,7 +67,7 @@ models:
       - name: createdTime ct
         type: datetime required hidden
       - name: createdAt
-        type: long virtual
+        type: long virtual required
         sources:
           - createdTime
         imports:
