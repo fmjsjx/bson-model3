@@ -231,8 +231,14 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     public Preferences loadStoreData(Object data) {
         resetStates();
         if (data instanceof PreferencesStoreData _storeData) {
-            custom = _storeData.custom;
-            features = _storeData.features;
+            var _custom = _storeData.custom;
+            if (_custom != null) {
+                custom = _custom;
+            }
+            var _features = _storeData.features;
+            if (_features != null) {
+                features = _features;
+            }
             getAttributes().loadStoreData(_storeData.attributes);
         }
         return this;

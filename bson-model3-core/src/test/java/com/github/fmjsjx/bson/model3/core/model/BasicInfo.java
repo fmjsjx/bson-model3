@@ -277,9 +277,14 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         resetStates();
         if (data instanceof BasicInfoStoreData _storeData) {
             name = _storeData.name;
-            avatar = _storeData.avatar;
+            var _avatar = _storeData.avatar;
+            if (_avatar != null) {
+                avatar = _avatar;
+            }
             var _birthday = _storeData.birthday;
-            birthday = _birthday == null ? null : DateTimeUtil.toDate(_birthday);
+            if (_birthday != null) {
+                birthday = DateTimeUtil.toDate(_birthday);
+            }
             createdTime = DateTimeUtil.ofEpochMilli(_storeData.createdTime);
         }
         return this;

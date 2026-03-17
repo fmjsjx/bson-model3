@@ -2300,6 +2300,10 @@ class MapPropertyGenerator < PropertyGenerator
     code << "    }\n"
   end
 
+  def generate_init_code
+    map_init_code
+  end
+
   private
   def parse_generic_type
     if field_conf.type == 'object'
@@ -3931,6 +3935,8 @@ class LoadFieldGenerator
         LoadUuidGenerator.new(config, model_conf, field_conf)
       when 'std-list'
         LoadStdListGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        LoadMapGenerator.new(config, model_conf, field_conf)
       else
         new(config, model_conf, field_conf)
       end
@@ -3967,7 +3973,9 @@ class LoadFieldGenerator
     code << "                    if (#{@temp_field_name} != null) {\n"
     code << "                        #{@temp_field_name}.unbind()\n"
     code << "                    }\n"
-    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}().load(it).parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name});\n"
+    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}()\n"
+    code << "                            .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name})\n"
+    code << "                            .load(it);\n"
     code << "                },\n"
     code << "                () -> {\n"
     code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
@@ -4320,6 +4328,41 @@ end
 
 
 
+class LoadMapGenerator < LoadFieldGenerator
+
+  attr_reader :property_generator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+    @property_generator = MapPropertyGenerator.new(config, model_conf, field_conf)
+  end
+
+    def generate_load_optional_field_code
+    code = ''
+    code << "        BsonUtil.documentValue(src, #{field_conf.store_name_const_name}).ifPresentOrElse(\n"
+    code << "                it -> {\n"
+    code << "                    var #{temp_field_name} = this.#{field_conf.name};\n"
+    code << "                    if (#{temp_field_name} != null) {\n"
+    code << "                        #{temp_field_name}.unbind()\n"
+    code << "                    }\n"
+    code << "                    this.#{field_conf.name} = #{@property_generator.generate_init_code}\n"
+    code << "                            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name})\n"
+    code << "                            .load(it);\n"
+    code << "                },\n"
+    code << "                () -> {\n"
+    code << "                    var #{temp_field_name} = this.#{field_conf.name};\n"
+    code << "                    if (#{temp_field_name} != null) {\n"
+    code << "                        #{temp_field_name}.unbind()\n"
+    code << "                        this.#{field_conf.name} = null;\n"
+    code << "                    }\n"
+    code << "                }\n"
+    code << "        );\n"
+  end
+
+end
+
+
+
 
 class LoadGenerator
 
@@ -4597,6 +4640,239 @@ class ToStoreDataGenerator
 
 end
 
+class LoadStoreFieldDataGenerator
+
+  class << self
+  
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        LoadStoreSimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        LoadStoreDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        LoadStoreTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        LoadStoreDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        LoadStoreObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        LoadStoreUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        LoadStoreStdListDataGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        LoadStoreMapDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+  
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if field_conf.required?
+      generate_required_load_store_data_code
+    else
+      generate_optional_load_store_data_code
+    end
+  end
+
+  def generate_required_load_store_data_code
+    "            #{@field_conf.getter_name}().loadStoreData(_storeData.#{@field_conf.name});\n"
+  end
+
+  def generate_optional_load_store_data_code
+    code = ''
+    code << "            var #{@temp_field_name} = _storeData.#{@field_conf.name};\n"
+    code << "            if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_load_store_data_code
+    code << "            }\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{@field_conf.name} = new #{@field_conf.model}().parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+
+class LoadStoreSimpleDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = _storeData.#{field_conf.name};\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = #{temp_field_name};\n"
+  end
+
+end
+
+
+
+class LoadStoreDateDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.toDate(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.toDate(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreTimeDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.toTime(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.toTime(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreDateTimeDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.ofEpochMilli(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.ofEpochMilli(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreObjectIdDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = new ObjectId(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = new ObjectId(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreUuidDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = UUID.fromString(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = UUID.fromString(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreStdListDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = _storeData.#{field_conf.name}#{value_map_code};\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = #{temp_field_name}#{value_map_code};\n"
+  end
+
+  private
+  def value_map_code
+    case field_conf.value
+    when 'date'
+      '.stream().map(DateTimeUtil::toDate).toList()'
+    when 'time'
+      '.stream().map(DateTimeUtil::toTime).toList()'
+    when 'datetime'
+      '.stream().map(DateTimeUtil::ofEpochMilli).toList()'
+    when 'object-id'
+      '.stream().map(ObjectId::new).toList()'
+    when 'uuid'
+      '.stream().map(UUID::fromString).toList()'
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+class LoadStoreMapDataGenerator < LoadStoreFieldDataGenerator
+
+  attr_reader :property_generator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+    @property_generator = MapPropertyGenerator.new(config, model_conf, field_conf)
+  end
+
+  def generate_optional_variable_load_store_data_code
+    code = ''
+    code << "                #{field_conf.name} = #{@property_generator.generate_init_code}\n"
+    code << "                        .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name})\n"
+    code << "                        .loadStoreData(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+
+class LoadStoreDataGenerator
+
+  attr_reader :config, :model_conf, :field_confs, :load_store_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+    @load_store_field_data_generators = @field_confs.map do |field_conf|
+      LoadStoreFieldDataGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} loadStoreData(Object data) {\n"
+    code << "        resetStates();\n"
+    code << "        if (data instanceof #{@model_conf.name}StoreData _storeData) {\n"
+    @load_store_field_data_generators.each do |load_store_field_data_generator|
+      code << load_store_field_data_generator.generate
+    end
+    code << "        }\n"
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
 
 
 class ModelGenerator
@@ -4614,7 +4890,8 @@ class ModelGenerator
               :to_display_data_generator,
               :to_bson_value_generator,
               :load_generator,
-              :to_store_data_generator
+              :to_store_data_generator,
+              :load_store_data_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -4632,6 +4909,7 @@ class ModelGenerator
     @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
     @load_generator = LoadGenerator.new(@config, @model_conf)
     @to_store_data_generator = ToStoreDataGenerator.new(@config, @model_conf)
+    @load_store_data_generator = LoadStoreDataGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -4707,6 +4985,7 @@ class ModelGenerator
     code << generate_to_bson_value_code
     code << generate_load_code
     code << generate_to_store_data_code
+    code << generate_load_store_data_code
     # TODO generate other methods
   end
 
@@ -4764,6 +5043,11 @@ class ModelGenerator
   def generate_to_store_data_code
     code = "\n"
     code << @to_store_data_generator.generate
+  end
+
+  def generate_load_store_data_code
+    code = "\n"
+    code << @load_store_data_generator.generate
   end
 
   def generate_class_suffix_code

@@ -72,6 +72,10 @@ class MapPropertyGenerator < PropertyGenerator
     code << "    }\n"
   end
 
+  def generate_init_code
+    map_init_code
+  end
+
   private
   def parse_generic_type
     if field_conf.type == 'object'

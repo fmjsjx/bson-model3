@@ -28,6 +28,8 @@ class LoadFieldGenerator
         LoadUuidGenerator.new(config, model_conf, field_conf)
       when 'std-list'
         LoadStdListGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        LoadMapGenerator.new(config, model_conf, field_conf)
       else
         new(config, model_conf, field_conf)
       end
@@ -64,7 +66,9 @@ class LoadFieldGenerator
     code << "                    if (#{@temp_field_name} != null) {\n"
     code << "                        #{@temp_field_name}.unbind()\n"
     code << "                    }\n"
-    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}().load(it).parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name});\n"
+    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}()\n"
+    code << "                            .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name})\n"
+    code << "                            .load(it);\n"
     code << "                },\n"
     code << "                () -> {\n"
     code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
@@ -91,3 +95,4 @@ require_relative 'load/load_date_time_generator'
 require_relative 'load/load_object_id_generator'
 require_relative 'load/load_uuid_generator'
 require_relative 'load/load_std_list_generator'
+require_relative 'load/load_map_generator'
