@@ -4349,6 +4349,254 @@ class LoadGenerator
 
 end
 
+class ToStoreFieldDataGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        ToStoreSimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToStoreDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToStoreTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToStoreDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToStoreObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToStoreUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToStoreStdListDataGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        ToStoreMapDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required?
+      generate_required_to_store_data_code
+    else
+      generate_optional_to_store_data_code
+    end
+  end
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{@field_conf.name} = #{@field_conf.getter_name}().toStoreData();\n"
+  end
+
+  def generate_optional_to_store_data_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_to_store_data_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{@field_conf.name} = #{@temp_field_name}.toStoreData();\n"
+  end
+
+end
+
+
+
+
+class ToStoreSimpleDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name};\n"
+  end
+
+end
+
+
+
+class ToStoreDateDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreTimeDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreDateTimeDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toEpochMilli(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toEpochMilli(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreObjectIdDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}().toHexString();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}.toHexString();\n"
+  end
+
+end
+
+
+
+class ToStoreUuidDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}().toString();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}.toString();\n"
+  end
+
+end
+
+
+
+class ToStoreStdListDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}()#{value_map_code};\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}#{value_map_code};\n"
+  end
+
+  private
+  def value_map_code
+    case field_conf.value
+    when 'date'
+      ".stream().map(DateTimeUtil::toNumber).toList()"
+    when 'time'
+      ".stream().map(DateTimeUtil::toNumber).toList()"
+    when 'datetime'
+      ".stream().map(DateTimeUtil::toEpochMilli).toList()"
+    when 'object-id'
+      ".stream().map(ObjectId::toHexString).toList()"
+    when 'uuid'
+      ".stream().map(UUID::toString).toList()"
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+class ToStoreMapDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = (Map<String, #{store_data_value_type}>) #{field_conf.getter_name}().toStoreData();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = (Map<String, #{store_data_value_type}>) #{temp_field_name}.toStoreData();\n"
+  end
+
+  private
+  def store_data_value_type
+    case field_conf.value
+    when 'int'
+      'Integer'
+    when 'long', 'datetime'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'object'
+      "#{@field_conf.model}.#{@field_conf.model}StoreData"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+
+
+
+class ToStoreDataGenerator
+
+  attr_reader :config, :model_conf, :field_confs, :to_store_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+    @to_store_field_data_generators = @field_confs.map do |field_conf|
+      ToStoreFieldDataGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    if @field_confs.any? { |field_conf| field_conf.type == 'map' }
+      code << "    @SuppressWarnings(\"unchecked\")\n"
+    end
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name}StoreData toStoreData() {\n"
+    code << "        var _storeData = new #{@model_conf.name}StoreData();\n"
+    @to_store_field_data_generators.each do |to_store_field_data_generator|
+      code << to_store_field_data_generator.generate
+    end
+    code << "        return _storeData;\n"
+    code << "    }\n"
+  end
+
+end
+
 
 
 class ModelGenerator
@@ -4364,7 +4612,9 @@ class ModelGenerator
               :append_field_updates_generator,
               :append_updated_data_generator,
               :to_display_data_generator,
-              :to_bson_value_generator
+              :to_bson_value_generator,
+              :load_generator,
+              :to_store_data_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -4381,6 +4631,7 @@ class ModelGenerator
     @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
     @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
     @load_generator = LoadGenerator.new(@config, @model_conf)
+    @to_store_data_generator = ToStoreDataGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -4455,6 +4706,7 @@ class ModelGenerator
     code << generate_to_display_data_code
     code << generate_to_bson_value_code
     code << generate_load_code
+    code << generate_to_store_data_code
     # TODO generate other methods
   end
 
@@ -4507,6 +4759,11 @@ class ModelGenerator
   def generate_load_code
     code = "\n"
     code << @load_generator.generate
+  end
+
+  def generate_to_store_data_code
+    code = "\n"
+    code << @to_store_data_generator.generate
   end
 
   def generate_class_suffix_code

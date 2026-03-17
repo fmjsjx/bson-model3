@@ -215,8 +215,14 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     @Override
     public PreferencesStoreData toStoreData() {
         var _storeData = new PreferencesStoreData();
-        _storeData.custom = getCustom();
-        _storeData.features = getFeatures();
+        var _custom = getCustom();
+        if (_custom != null) {
+            _storeData.custom = _custom;
+        }
+        var _features = getFeatures();
+        if (_features != null) {
+            _storeData.features = _features;
+        }
         _storeData.attributes = (Map<String, String>) getAttributes().toStoreData();
         return _storeData;
     }
