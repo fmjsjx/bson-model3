@@ -10,6 +10,7 @@ require_relative 'to_bson_value_generator'
 require_relative 'load_generator'
 require_relative 'to_store_data_generator'
 require_relative 'load_store_data_generator'
+require_relative 'any_updated_generator'
 
 
 class ModelGenerator
@@ -28,7 +29,8 @@ class ModelGenerator
               :to_bson_value_generator,
               :load_generator,
               :to_store_data_generator,
-              :load_store_data_generator
+              :load_store_data_generator,
+              :any_updated_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -47,6 +49,7 @@ class ModelGenerator
     @load_generator = LoadGenerator.new(@config, @model_conf)
     @to_store_data_generator = ToStoreDataGenerator.new(@config, @model_conf)
     @load_store_data_generator = LoadStoreDataGenerator.new(@config, @model_conf)
+    @any_updated_generator = AnyUpdatedGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -123,6 +126,7 @@ class ModelGenerator
     code << generate_load_code
     code << generate_to_store_data_code
     code << generate_load_store_data_code
+    code << generate_any_updated_code
     # TODO generate other methods
   end
 
@@ -185,6 +189,11 @@ class ModelGenerator
   def generate_load_store_data_code
     code = "\n"
     code << @load_store_data_generator.generate
+  end
+
+  def generate_any_updated_code
+    code = "\n"
+    code << @any_updated_generator.generate
   end
 
   def generate_class_suffix_code

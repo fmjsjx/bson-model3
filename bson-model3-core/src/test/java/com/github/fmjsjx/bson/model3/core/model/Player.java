@@ -436,6 +436,9 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.isEmpty()) {
             return false;
         }
+        if (changedFields.get(FIELD_INDEX_ID)) {
+            return true;
+        }
         if (changedFields.get(FIELD_INDEX_BASIC_INFO) && getBasicInfo().anyUpdated()) {
             return true;
         }
