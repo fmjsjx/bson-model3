@@ -299,4 +299,139 @@ public class BsonValueUtilTests {
         assertEquals(smallDecimal, bsonSmallDecimal.getValue().bigDecimalValue());
     }
 
+    @Test
+    public void testMapToBigDecimalList() {
+        BsonArray array = new BsonArray();
+        array.add(new BsonDecimal128(new Decimal128(new BigDecimal("123.45"))));
+        array.add(new BsonInt64(100L));
+        array.add(BsonNull.VALUE);
+        array.add(new BsonDouble(99.9));
+
+        List<BigDecimal> result = BsonValueUtil.mapToBigDecimalList(array);
+        assertEquals(4, result.size());
+        assertEquals(new BigDecimal("123.45"), result.get(0));
+        assertEquals(BigDecimal.valueOf(100L), result.get(1));
+        assertNull(result.get(2));
+        assertEquals(BigDecimal.valueOf(99.9), result.get(3));
+    }
+
+    @Test
+    public void testMapToLocalDateList() {
+        BsonArray array = new BsonArray();
+        array.add(new BsonInt32(20231027));
+        array.add(new BsonInt32(20240101));
+        array.add(BsonNull.VALUE);
+
+        List<LocalDate> result = BsonValueUtil.mapToLocalDateList(array);
+        assertEquals(3, result.size());
+        assertEquals(LocalDate.of(2023, 10, 27), result.get(0));
+        assertEquals(LocalDate.of(2024, 1, 1), result.get(1));
+        assertNull(result.get(2));
+    }
+
+    @Test
+    public void testMapToLocalTimeList() {
+        BsonArray array = new BsonArray();
+        array.add(new BsonInt32(143045));
+        array.add(new BsonInt32(0));
+        array.add(BsonNull.VALUE);
+        array.add(new BsonInt32(235959));
+
+        List<LocalTime> result = BsonValueUtil.mapToLocalTimeList(array);
+        assertEquals(4, result.size());
+        assertEquals(LocalTime.of(14, 30, 45), result.get(0));
+        assertEquals(LocalTime.MIDNIGHT, result.get(1));
+        assertNull(result.get(2));
+        assertEquals(LocalTime.of(23, 59, 59), result.get(3));
+    }
+
+    @Test
+    public void testMapToLocalDateTimeList() {
+        long millis1 = 1625097600000L; // 2021-07-01T00:00:00Z
+        long millis2 = 1672531200000L; // 2023-01-01T00:00:00Z
+
+        BsonArray array = new BsonArray();
+        array.add(new BsonDateTime(millis1));
+        array.add(new BsonDateTime(millis2));
+        array.add(BsonNull.VALUE);
+        array.add(new BsonTimestamp((int) (millis1 / 1000), 0));
+
+        List<LocalDateTime> result = BsonValueUtil.mapToLocalDateTimeList(array);
+        assertEquals(4, result.size());
+        assertEquals(LocalDateTime.ofInstant(Instant.ofEpochMilli(millis1), ZoneId.systemDefault()), result.get(0));
+        assertEquals(LocalDateTime.ofInstant(Instant.ofEpochMilli(millis2), ZoneId.systemDefault()), result.get(1));
+        assertNull(result.get(2));
+        assertEquals(LocalDateTime.ofInstant(Instant.ofEpochSecond((int) (millis1 / 1000)), ZoneId.systemDefault()), result.get(3));
+    }
+
+    @Test
+    public void testMapToObjectIdList() {
+        ObjectId oid1 = new ObjectId();
+        ObjectId oid2 = new ObjectId();
+
+        BsonArray array = new BsonArray();
+        array.add(new BsonObjectId(oid1));
+        array.add(new BsonObjectId(oid2));
+        array.add(BsonNull.VALUE);
+
+        List<ObjectId> result = BsonValueUtil.mapToObjectId(array);
+        assertEquals(3, result.size());
+        assertEquals(oid1, result.get(0));
+        assertEquals(oid2, result.get(1));
+        assertNull(result.get(2));
+    }
+
+    @Test
+    public void testMapToUuidList() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        BsonArray array = new BsonArray();
+        array.add(new BsonBinary(uuid1));
+        array.add(new BsonBinary(uuid2));
+        array.add(BsonNull.VALUE);
+
+        List<UUID> result = BsonValueUtil.mapToUuidList(array);
+        assertEquals(3, result.size());
+        assertEquals(uuid1, result.get(0));
+        assertEquals(uuid2, result.get(1));
+        assertNull(result.get(2));
+    }
+
+    @Test
+    public void testMapToUuidListWithRepresentation() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        BsonArray array = new BsonArray();
+        array.add(new BsonBinary(uuid1, UuidRepresentation.STANDARD));
+        array.add(new BsonBinary(uuid2, UuidRepresentation.STANDARD));
+        array.add(BsonNull.VALUE);
+
+        List<UUID> result = BsonValueUtil.mapToUuidList(array, UuidRepresentation.STANDARD);
+        assertEquals(3, result.size());
+        assertEquals(uuid1, result.get(0));
+        assertEquals(uuid2, result.get(1));
+        assertNull(result.get(2));
+    }
+
+    @Test
+    public void testMapToObjectList() {
+        BsonDocument doc1 = new BsonDocument("name", new BsonString("Alice"));
+        doc1.append("age", new BsonInt32(30));
+        BsonDocument doc2 = new BsonDocument("name", new BsonString("Bob"));
+        doc2.append("age", new BsonInt32(25));
+
+        BsonArray array = new BsonArray();
+        array.add(doc1);
+        array.add(BsonNull.VALUE);
+        array.add(doc2);
+
+        List<String> result = BsonValueUtil.mapToObjectList(array, d -> d.getString("name").getValue());
+        assertEquals(3, result.size());
+        assertEquals("Alice", result.get(0));
+        assertNull(result.get(1));
+        assertEquals("Bob", result.get(2));
+    }
+
 }

@@ -12,7 +12,8 @@ class DecimalDefaultValue < DefaultValue
   end
 
   def generate_code(config, model_conf, field_conf)
-    case field_conf.default.upcase
+    value = field_conf.default
+    case value.upcase
     when 'ZERO'
       'BigDecimal.ZERO'
     when 'ONE'
@@ -20,7 +21,11 @@ class DecimalDefaultValue < DefaultValue
     when 'TEN'
       'BigDecimal.TEN'
     else
-      "new BigDecimal(\"#{field_conf.default}\")"
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'decimal' and const_conf.name == value }
+        value
+      else
+        "new BigDecimal(\"#{value}\")"
+      end
     end
   end
 

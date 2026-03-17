@@ -1141,7 +1141,8 @@ class DecimalDefaultValue < DefaultValue
   end
 
   def generate_code(config, model_conf, field_conf)
-    case field_conf.default.upcase
+    value = field_conf.default
+    case value.upcase
     when 'ZERO'
       'BigDecimal.ZERO'
     when 'ONE'
@@ -1149,7 +1150,11 @@ class DecimalDefaultValue < DefaultValue
     when 'TEN'
       'BigDecimal.TEN'
     else
-      "new BigDecimal(\"#{field_conf.default}\")"
+      if model_conf.consts.any? { |const_conf| const_conf.type == 'decimal' and const_conf.name == value }
+        value
+      else
+        "new BigDecimal(\"#{value}\")"
+      end
     end
   end
 
@@ -3896,6 +3901,454 @@ class ToBsonValueGenerator
 
 end
 
+class LoadFieldGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        LoadIntGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        LoadLongGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        LoadDoubleGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        LoadDecimalGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        LoadBooleanGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        LoadStringGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        LoadDateGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        LoadTimeGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        LoadDateTimeGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        LoadObjectIdGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        LoadUuidGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        LoadStdListGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{@field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required? and not @field_conf.readonly?
+      generate_load_required_field_code
+    else
+      generate_load_optional_field_code
+    end
+  end
+
+  def generate_load_required_field_code
+    "        BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).ifPresentOrElse(#{@field_conf.getter_name}()::load, #{@field_conf.getter_name}()::clean);\n"
+  end
+
+  def generate_load_optional_field_code
+    code = ''
+    code << "        BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).ifPresentOrElse(\n"
+    code << "                it -> {\n"
+    code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
+    code << "                    if (#{@temp_field_name} != null) {\n"
+    code << "                        #{@temp_field_name}.unbind()\n"
+    code << "                    }\n"
+    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}().load(it).parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name});\n"
+    code << "                },\n"
+    code << "                () -> {\n"
+    code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
+    code << "                    if (#{@temp_field_name} != null) {\n"
+    code << "                        #{@temp_field_name}.unbind()\n"
+    code << "                        this.#{@field_conf.name} = null;\n"
+    code << "                    }\n"
+    code << "                }\n"
+    code << "        );\n"
+  end
+
+end
+
+
+
+
+class LoadIntGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(0);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    IntDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadLongGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(0L);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDoubleGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(Double.NaN);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDecimalGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(BigDecimal.ZERO);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadBooleanGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(false);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    BooleanDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadStringGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(\"\");\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    StringDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDateGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(LocalDate.EPOCH);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DateDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadTimeGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(LocalTime.MIDNIGHT);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDateTimeGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(BsonModelConstants.EPOCH_DATE_TIME);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DateTimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadObjectIdGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    "        #{@field_conf.name} = BsonUtil.objectIdValue(src, #{@field_conf.store_name_const_name}).orElseThrow();\n"
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.objectIdValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+end
+
+
+
+class LoadUuidGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if field_conf.has_modifier?('legacy')
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}, UuidRepresentation.JAVA_LEGACY).orElseThrow();\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}).orElseThrow();\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    if field_conf.has_modifier?('legacy')
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}, UuidRepresentation.JAVA_LEGACY).orElse(null);\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+    end
+  end
+
+end
+
+
+
+class LoadStdListGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    "        #{@field_conf.name} = BsonUtil.arrayValue(src, #{@field_conf.store_name_const_name}).map(#{map_code}).orElse(List.of());\n"
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.arrayValue(src, #{@field_conf.store_name_const_name}).map(#{map_code}).orElse(null);\n"
+  end
+
+  private
+  def map_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      'BsonValueUtil::mapToIntegerList'
+    when 'long'
+      'BsonValueUtil::mapToLongList'
+    when 'double'
+      'BsonValueUtil::mapToDoubleList'
+    when 'decimal'
+      'BsonValueUtil::mapToBigDecimalList'
+    when 'string'
+      'BsonValueUtil::mapToStringList'
+    when 'date'
+      'BsonValueUtil::mapToLocalDateList'
+    when 'time'
+      'BsonValueUtil::mapToLocalTimeList'
+    when 'datetime'
+      'BsonValueUtil::mapToLocalDateTimeList'
+    when 'object-id'
+      'BsonValueUtil::mapToObjectIdList'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> BsonValueUtil.mapToUuidList(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonValueUtil::mapToUuidList'
+      end
+    when 'object'
+      "it -> BsonValueUtils.mapToObjectList(it, (bson) -> new #{field_conf.name}().load(bson))"
+    else
+      raise ArgumentError, "Unsupported value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+
+class LoadGenerator
+
+  attr_reader :config, :model_conf, :load_field_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @load_field_generators = model_conf.fields.select do |field_conf|
+      field_conf.store_field? or field_conf.readonly?
+    end.map do |field_conf|
+      LoadFieldGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} load(BsonDocument src) {\n"
+    code << "        resetStates();\n"
+    @load_field_generators.each do |load_field_generator|
+      code << load_field_generator.generate
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
 
 
 class ModelGenerator
@@ -3927,6 +4380,7 @@ class ModelGenerator
     @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
     @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
     @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
+    @load_generator = LoadGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -4000,6 +4454,7 @@ class ModelGenerator
     code << generate_append_updated_data_code
     code << generate_to_display_data_code
     code << generate_to_bson_value_code
+    code << generate_load_code
     # TODO generate other methods
   end
 
@@ -4047,6 +4502,11 @@ class ModelGenerator
   def generate_to_bson_value_code
     code = "\n"
     code << @to_bson_value_generator.generate
+  end
+
+  def generate_load_code
+    code = "\n"
+    code << @load_generator.generate
   end
 
   def generate_class_suffix_code

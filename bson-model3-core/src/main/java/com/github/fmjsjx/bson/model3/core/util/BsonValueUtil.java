@@ -312,6 +312,97 @@ public class BsonValueUtil {
     }
 
     /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link BigDecimal}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable BigDecimal> mapToBigDecimalList(BsonArray bsonArray) {
+        return map(bsonArray, BsonValueUtil::toBigDecimal);
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link LocalDate}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable LocalDate> mapToLocalDateList(BsonArray bsonArray) {
+        return map(bsonArray, it -> DateTimeUtil.toDate(toInt(it)));
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link LocalTime}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable LocalTime> mapToLocalTimeList(BsonArray bsonArray) {
+        return map(bsonArray, it -> DateTimeUtil.toTime(toInt(it)));
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link LocalDateTime}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable LocalDateTime> mapToLocalDateTimeList(BsonArray bsonArray) {
+        return map(bsonArray, BsonValueUtil::toLocalDateTime);
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link ObjectId}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable ObjectId> mapToObjectId(BsonArray bsonArray) {
+        return map(bsonArray, BsonValueUtil::toObjectId);
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link UUID}s.
+     *
+     * @param bsonArray the {@link BsonArray} to be converted
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable UUID> mapToUuidList(BsonArray bsonArray) {
+        return map(bsonArray, BsonValueUtil::toUuid);
+    }
+
+    /**
+     * Converts the specified {@link BsonValue} to {@link LocalDateTime}.
+     *
+     * @param bsonArray      the {@link BsonArray} to be converted
+     * @param representation the {@link UuidRepresentation} to be used
+     * @return the converted {@link List}
+     */
+    public static List<@Nullable UUID> mapToUuidList(BsonArray bsonArray, UuidRepresentation representation) {
+        return map(bsonArray, it -> toUuid(it, representation));
+    }
+
+    /**
+     * Converts the specified {@link BsonArray} to {@link List} of
+     * {@link R}s.
+     *
+     * @param bsonArray   the {@link BsonArray} to be converted
+     * @param valueMapper the {@link Function} to apply to each element
+     * @param <R>         the target type for each element to be
+     *                    converted to
+     * @return the converted {@link List}
+     */
+    public static <R> List<@Nullable R> mapToObjectList(BsonArray bsonArray, Function<? super BsonDocument, ? extends R> valueMapper) {
+        return map(bsonArray, ((Function<? super BsonValue, ? extends BsonDocument>) BsonValue::asDocument).andThen(valueMapper));
+    }
+
+    /**
      * Converts the specified {@link BsonValue} to {@link Boolean}.
      *
      * @param bsonValue the {@link BsonValue} to be converted

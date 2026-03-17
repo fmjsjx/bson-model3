@@ -216,10 +216,10 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     @Override
     public Wallet load(BsonDocument src) {
         resetStates();
-        coinTotal = BsonUtil.longValue(src, STORE_NAME_COIN_TOTAL).orElse(0);
-        coinConsumed = BsonUtil.longValue(src, STORE_NAME_COIN_CONSUMED).orElse(0);
-        diamondTotal = BsonUtil.longValue(src, STORE_NAME_DIAMOND_TOTAL).orElse(0);
-        diamondConsumed = BsonUtil.longValue(src, STORE_NAME_DIAMOND_CONSUMED).orElse(0);
+        coinTotal = BsonUtil.longValue(src, STORE_NAME_COIN_TOTAL).orElse(0L);
+        coinConsumed = BsonUtil.longValue(src, STORE_NAME_COIN_CONSUMED).orElse(0L);
+        diamondTotal = BsonUtil.longValue(src, STORE_NAME_DIAMOND_TOTAL).orElse(0L);
+        diamondConsumed = BsonUtil.longValue(src, STORE_NAME_DIAMOND_CONSUMED).orElse(0L);
         return this;
     }
 
