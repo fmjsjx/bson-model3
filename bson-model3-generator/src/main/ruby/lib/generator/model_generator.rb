@@ -14,6 +14,7 @@ require_relative 'any_updated_generator'
 require_relative 'deleted_data_generator'
 require_relative 'deleted_generator'
 require_relative 'deep_copy_from_generator'
+require_relative 'to_string_generator'
 
 
 class ModelGenerator
@@ -36,7 +37,8 @@ class ModelGenerator
               :any_updated_generator,
               :deleted_data_generator,
               :deleted_generator,
-              :deep_copy_from_generator
+              :deep_copy_from_generator,
+              :to_string_generator
 
   def initialize(config, model_conf)
     @config = config
@@ -59,6 +61,7 @@ class ModelGenerator
     @deleted_data_generator = DeletedDataGenerator.new(@config, @model_conf)
     @deleted_generator = DeletedGenerator.new(@config, @model_conf) 
     @deep_copy_from_generator = DeepCopyFromGenerator.new(@config, @model_conf)
+    @to_string_generator = ToStringGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -139,7 +142,7 @@ class ModelGenerator
     code << generate_deleted_code
     code << generate_deep_copy_code
     code << generate_deep_copy_from_code
-    # TODO generate other methods
+    code << generate_to_string_code
   end
 
   def generate_store_data_type_code
@@ -252,8 +255,14 @@ class ModelGenerator
     code << @deep_copy_from_generator.generate
   end
 
+  def generate_to_string_code
+    code = "\n"
+    code << @to_string_generator.generate
+  end
+
   def generate_class_suffix_code
-    "}\n"
+    code = "\n"
+    code << "}\n"
   end
 
 end

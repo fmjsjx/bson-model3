@@ -342,4 +342,5 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
                 ", hp=" + getHp() +
                 ")";
     }
+
 }

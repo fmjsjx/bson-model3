@@ -347,4 +347,5 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
                 ", attributes=" + getAttributes() +
                 ")";
     }
+
 }

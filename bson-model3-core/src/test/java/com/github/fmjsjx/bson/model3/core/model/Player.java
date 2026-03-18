@@ -581,4 +581,5 @@ public final class Player extends AbstractRootModel<Player> {
                 ", updatedAt=" + getUpdatedAt() +
                 ")";
     }
+
 }
