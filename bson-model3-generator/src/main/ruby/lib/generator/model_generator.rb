@@ -13,6 +13,7 @@ require_relative 'load_store_data_generator'
 require_relative 'any_updated_generator'
 require_relative 'deleted_data_generator'
 require_relative 'deleted_generator'
+require_relative 'deep_copy_from_generator'
 
 
 class ModelGenerator
@@ -34,8 +35,9 @@ class ModelGenerator
               :load_store_data_generator,
               :any_updated_generator,
               :deleted_data_generator,
-              :deleted_generator
-  
+              :deleted_generator,
+              :deep_copy_from_generator
+
   def initialize(config, model_conf)
     @config = config
     @model_conf = model_conf
@@ -55,7 +57,8 @@ class ModelGenerator
     @load_store_data_generator = LoadStoreDataGenerator.new(@config, @model_conf)
     @any_updated_generator = AnyUpdatedGenerator.new(@config, @model_conf)
     @deleted_data_generator = DeletedDataGenerator.new(@config, @model_conf)
-    @deleted_generator = DeletedGenerator.new(@config, @model_conf)
+    @deleted_generator = DeletedGenerator.new(@config, @model_conf) 
+    @deep_copy_from_generator = DeepCopyFromGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -134,6 +137,8 @@ class ModelGenerator
     code << generate_load_store_data_code
     code << generate_any_updated_code
     code << generate_deleted_code
+    code << generate_deep_copy_code
+    code << generate_deep_copy_from_code
     # TODO generate other methods
   end
 
@@ -232,6 +237,19 @@ class ModelGenerator
       code << "\n"
       code << @deleted_generator.generate_deleted_size_code
     end
+  end
+
+  def generate_deep_copy_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} deepCopy() {\n"
+    code << "        return new #{@model_conf.name}().deepCopyFrom(this);\n"
+    code << "    }\n"
+  end
+  
+  def generate_deep_copy_from_code
+    code = "\n"
+    code << @deep_copy_from_generator.generate
   end
 
   def generate_class_suffix_code

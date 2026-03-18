@@ -14,10 +14,7 @@ import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @NullMarked
 public final class Preferences extends AbstractObjectModel<Preferences> {
@@ -333,7 +330,12 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     @Override
     public Preferences deepCopyFrom(Preferences src) {
         custom = src.getCustom();
-        features = src.getFeatures();
+        var _features = src.getFeatures();
+        if (_features != null) {
+            features = new ArrayList<>(_features);
+        } else {
+            features = null;
+        }
         getAttributes().deepCopyFrom(src.getAttributes());
         return this;
     }

@@ -325,11 +325,11 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
 
     @Override
     public Equipment deepCopyFrom(Equipment src) {
-        id = src.id;
-        refId = src.refId;
-        atk = src.atk;
-        def = src.def;
-        hp = src.hp;
+        id = src.getId();
+        refId = src.getRefId();
+        atk = src.getAtk();
+        def = src.getDef();
+        hp = src.getHp();
         return this;
     }
 
