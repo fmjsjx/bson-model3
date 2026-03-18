@@ -11,6 +11,8 @@ require_relative 'load_generator'
 require_relative 'to_store_data_generator'
 require_relative 'load_store_data_generator'
 require_relative 'any_updated_generator'
+require_relative 'deleted_data_generator'
+require_relative 'deleted_generator'
 
 
 class ModelGenerator
@@ -30,7 +32,9 @@ class ModelGenerator
               :load_generator,
               :to_store_data_generator,
               :load_store_data_generator,
-              :any_updated_generator
+              :any_updated_generator,
+              :deleted_data_generator,
+              :deleted_generator
   
   def initialize(config, model_conf)
     @config = config
@@ -50,6 +54,8 @@ class ModelGenerator
     @to_store_data_generator = ToStoreDataGenerator.new(@config, @model_conf)
     @load_store_data_generator = LoadStoreDataGenerator.new(@config, @model_conf)
     @any_updated_generator = AnyUpdatedGenerator.new(@config, @model_conf)
+    @deleted_data_generator = DeletedDataGenerator.new(@config, @model_conf)
+    @deleted_generator = DeletedGenerator.new(@config, @model_conf)
   end
 
   def generate
@@ -127,6 +133,7 @@ class ModelGenerator
     code << generate_to_store_data_code
     code << generate_load_store_data_code
     code << generate_any_updated_code
+    code << generate_deleted_code
     # TODO generate other methods
   end
 
@@ -194,6 +201,37 @@ class ModelGenerator
   def generate_any_updated_code
     code = "\n"
     code << @any_updated_generator.generate
+  end
+
+  def generate_deleted_code
+    code = ''
+    if @deleted_data_generator.field_confs.empty?
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public @Nullable Map<String, ?> toDeleted() {\n"
+      code << "        return null;\n"
+      code << "    }\n"
+    else
+      code << "\n"
+      code << @deleted_data_generator.generate_append_deleted_data_code
+    end
+    if @deleted_generator.field_confs.empty?
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public boolean anyDeleted() {\n"
+      code << "        return false;\n"
+      code << "    }\n"
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public int deletedSize() {\n"
+      code << "        return 0;\n"
+      code << "    }\n"
+    else
+      code << "\n"
+      code << @deleted_generator.generate_any_deleted_code
+      code << "\n"
+      code << @deleted_generator.generate_deleted_size_code
+    end
   end
 
   def generate_class_suffix_code

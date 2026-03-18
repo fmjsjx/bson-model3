@@ -531,23 +531,23 @@ public final class Player extends AbstractRootModel<Player> {
         if (changedFields.isEmpty()) {
             return 0;
         }
-        var _size = 0;
+        var __size = 0;
         if (changedFields.get(FIELD_INDEX_BASIC_INFO)) {
-            _size += getBasicInfo().deletedSize();
+            __size += getBasicInfo().deletedSize();
         }
         if (changedFields.get(FIELD_INDEX_PREFERENCES)) {
-            _size += getPreferences().deletedSize();
+            __size += getPreferences().deletedSize();
         }
         if (changedFields.get(FIELD_INDEX_EQUIPMENTS)) {
-            _size += getEquipments().deletedSize();
+            __size += getEquipments().deletedSize();
         }
         if (changedFields.get(FIELD_INDEX_ITEMS)) {
-            _size += getItems().deletedSize();
+            __size += getItems().deletedSize();
         }
         if (changedFields.get(FIELD_INDEX_UPDATED_TIME) && getUpdatedTime() == null) {
-            _size++;
+            __size++;
         }
-        return _size;
+        return __size;
     }
 
     @Override

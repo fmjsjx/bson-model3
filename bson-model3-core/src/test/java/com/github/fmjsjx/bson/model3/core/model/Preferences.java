@@ -312,17 +312,17 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         if (changedFields.isEmpty()) {
             return 0;
         }
-        var _size = 0;
+        var __size = 0;
         if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() == null) {
-            _size++;
+            __size++;
         }
         if (changedFields.get(FIELD_INDEX_FEATURES) && getFeatures() == null) {
-            _size++;
+            __size++;
         }
         if (changedFields.get(FIELD_INDEX_ATTRIBUTES)) {
-            _size += getAttributes().deletedSize();
+            __size += getAttributes().deletedSize();
         }
-        return _size;
+        return __size;
     }
 
     @Override

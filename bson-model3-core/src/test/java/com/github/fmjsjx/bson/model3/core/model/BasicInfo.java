@@ -352,14 +352,14 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         if (changedFields.isEmpty()) {
             return 0;
         }
-        var _size = 0;
+        var __size = 0;
         if (changedFields.get(FIELD_INDEX_AVATAR) && getAvatar() == null) {
-            _size++;
+            __size++;
         }
         if (changedFields.get(FIELD_INDEX_BIRTHDAY) && getBirthday() == null) {
-            _size++;
+            __size++;
         }
-        return _size;
+        return __size;
     }
 
     @Override
