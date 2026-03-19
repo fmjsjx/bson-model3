@@ -17,7 +17,7 @@ dependencies {
     compileOnlyApi("com.github.fmjsjx:libcommon-json-jsoniter")
 
     api("org.mongodb:bson")
-    implementation("org.mongodb:mongodb-driver-core")
+    api("org.mongodb:mongodb-driver-core")
     compileOnly("org.mongodb:mongodb-driver-sync")
     compileOnly("org.mongodb:mongodb-driver-reactivestreams")
 

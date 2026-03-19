@@ -13,7 +13,7 @@ class LoadDateGenerator < LoadFieldGenerator
   end
 
   def generate_load_optional_field_code
-    "        #{@field_conf.name} = BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+    "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
   end
 
   private

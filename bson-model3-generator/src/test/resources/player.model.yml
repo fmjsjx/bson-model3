@@ -125,7 +125,7 @@ models:
         sources:
           - coinTotal
           - coinConsumed
-        expression: getCoinTotal() - getCoinConsumed();
+        expression: getCoinTotal() - getCoinConsumed()
       - name: coinTotal ct
         type: long required
       - name: coinConsumed cc
@@ -135,7 +135,7 @@ models:
         sources:
           - diamondTotal
           - diamondConsumed
-        expression: getDiamondTotal() - getDiamondConsumed();
+        expression: getDiamondTotal() - getDiamondConsumed()
       - name: diamondTotal dt
         type: long required
       - name: diamondConsumed dc

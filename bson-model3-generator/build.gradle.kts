@@ -11,6 +11,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
+    testImplementation("com.github.fmjsjx:libcommon-json-fastjson2")
+    testImplementation("com.github.fmjsjx:libcommon-json-jsoniter")
+    testImplementation("com.github.fmjsjx:libcommon-json-jackson3")
 }
 
 description = "bson-model3/Generator"
