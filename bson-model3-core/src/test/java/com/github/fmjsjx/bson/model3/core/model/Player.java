@@ -30,6 +30,7 @@ public final class Player extends AbstractRootModel<Player> {
     public static final String STORE_NAME_ITEMS = "i";
     public static final String STORE_NAME_UPDATED_VERSION = "_uv";
     public static final String STORE_NAME_UPDATED_TIME = "_ut";
+    public static final String STORE_NAME_FRIENDS = "f";
 
     public static final String DISPLAY_NAME_ID = "uid";
     public static final String DISPLAY_NAME_BASIC_INFO = "basicInfo";
@@ -39,6 +40,7 @@ public final class Player extends AbstractRootModel<Player> {
     public static final String DISPLAY_NAME_EQUIPMENTS = "equipments";
     public static final String DISPLAY_NAME_ITEMS = "items";
     public static final String DISPLAY_NAME_UPDATED_AT = "updatedAt";
+    public static final String DISPLAY_NAME_FRIENDS = "friends";
 
     public static final int FIELD_INDEX_ID = 0;
     public static final int FIELD_INDEX_BASIC_INFO = 1;
@@ -50,6 +52,7 @@ public final class Player extends AbstractRootModel<Player> {
     public static final int FIELD_INDEX_UPDATED_VERSION = 7;
     public static final int FIELD_INDEX_UPDATED_TIME = 8;
     public static final int FIELD_INDEX_UPDATED_AT = 9;
+    public static final int FIELD_INDEX_FRIENDS = 10;
 
     @JSONType(alphabetic = false)
     public static final class PlayerStoreData {
@@ -178,6 +181,7 @@ public final class Player extends AbstractRootModel<Player> {
             .parent(this).index(FIELD_INDEX_ITEMS).key(STORE_NAME_ITEMS);
     private int updatedVersion;
     private @Nullable LocalDateTime updatedTime;
+    private @Nullable List<@Nullable Player> friends;
 
     public long getId() {
         return id;
@@ -246,6 +250,14 @@ public final class Player extends AbstractRootModel<Player> {
         return _updatedTime == null ? null : DateTimeUtil.toEpochMilli(_updatedTime);
     }
 
+    public @Nullable List<@Nullable Player> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(@Nullable List<@Nullable Player> friends) {
+        this.friends = friends;
+    }
+
     @Override
     protected Class<PlayerStoreData> storeDataType() {
         return PlayerStoreData.class;
@@ -273,6 +285,7 @@ public final class Player extends AbstractRootModel<Player> {
         getItems().clean();
         updatedVersion = 0;
         updatedTime = null;
+        friends = null;
         return this;
     }
 
@@ -383,6 +396,10 @@ public final class Player extends AbstractRootModel<Player> {
         if (_updatedAt != null) {
             _displayData.put(DISPLAY_NAME_UPDATED_AT, _updatedAt);
         }
+        var _friends = getFriends();
+        if (_friends != null) {
+            _displayData.put(DISPLAY_NAME_FRIENDS, CommonsUtil.mapToDisplayDataList(_friends));
+        }
         return _displayData;
     }
 
@@ -416,6 +433,7 @@ public final class Player extends AbstractRootModel<Player> {
         BsonUtil.documentValue(src, STORE_NAME_ITEMS).ifPresentOrElse(getItems()::load, getItems()::clean);
         updatedVersion = BsonUtil.intValue(src, STORE_NAME_UPDATED_VERSION).orElse(0);
         updatedTime = BsonUtil.dateTimeValue(src, STORE_NAME_UPDATED_TIME).orElse(null);
+        friends = BsonUtil.arrayValue(src, STORE_NAME_FRIENDS).map(it -> BsonValueUtil.mapToObjectList(it, (bson) -> new Player().load(bson))).orElse(null);
         return this;
     }
 
@@ -639,6 +657,7 @@ public final class Player extends AbstractRootModel<Player> {
                 ", updatedVersion=" + getUpdatedVersion() +
                 ", updatedTime=" + getUpdatedTime() +
                 ", updatedAt=" + getUpdatedAt() +
+                ", friends=" + getFriends() +
                 ")";
     }
 

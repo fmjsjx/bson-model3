@@ -58,6 +58,10 @@ models:
         block: |-
           var _updatedTime = getUpdatedTime();
           return _updatedTime == null ? null : DateTimeUtil.toEpochMilli(_updatedTime);
+      - name: friends f
+        type: std-list readonly
+        value: object
+        model: Player
   - name: BasicInfo
     type: object
     fields:

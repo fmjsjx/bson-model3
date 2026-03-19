@@ -1,8 +1,13 @@
 package com.github.fmjsjx.bson.model3.core.util;
 
+import com.github.fmjsjx.bson.model3.core.BsonModel;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.RandomAccess;
+import java.util.function.Function;
 
 /**
  * Utility class for commons.
@@ -39,6 +44,71 @@ public class CommonsUtil {
             return 1 + (int) (expectedSize / 0.75);
         }
         return Integer.MAX_VALUE;
+    }
+
+    /**
+     * Converts the given list to a list of display data.
+     *
+     * @param list the list to be converted
+     * @param <E>  the type of the elements, must be a subclass of
+     *             {@link BsonModel}
+     * @return the list of display data
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static <E extends BsonModel<?, ?>> List<@Nullable Object> mapToDisplayDataList(List<@Nullable E> list) {
+        var displayDataList = new ArrayList<@Nullable Object>(list.size());
+        if (list instanceof RandomAccess) {
+            for (int i = 0; i < list.size(); i++) {
+                E e = list.get(i);
+                if (e != null) {
+                    displayDataList.add(e.toDisplayData());
+                } else {
+                    displayDataList.add(null);
+                }
+            }
+        } else {
+            for (var e : list) {
+                if (e != null) {
+                    displayDataList.add(e.toDisplayData());
+                } else {
+                    displayDataList.add(null);
+                }
+            }
+        }
+        return displayDataList;
+    }
+
+    /**
+     * Converts the given list to a list of display data.
+     *
+     * @param list        the list to be converted
+     * @param valueMapper the value mapper
+     * @param <E>         the type of the elements, must be a subclass of
+     *                    {@link BsonModel}
+     * @return the list of display data
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public static <E> List<@Nullable Object> mapToDisplayDataList(List<@Nullable E> list, Function<? super E, ?> valueMapper) {
+        var displayDataList = new ArrayList<@Nullable Object>(list.size());
+        if (list instanceof RandomAccess) {
+            for (int i = 0; i < list.size(); i++) {
+                E e = list.get(i);
+                if (e != null) {
+                    displayDataList.add(valueMapper.apply(e));
+                } else {
+                    displayDataList.add(null);
+                }
+            }
+        } else {
+            for (var e : list) {
+                if (e != null) {
+                    displayDataList.add(valueMapper.apply(e));
+                } else {
+                    displayDataList.add(null);
+                }
+            }
+        }
+        return displayDataList;
     }
 
     private CommonsUtil() {

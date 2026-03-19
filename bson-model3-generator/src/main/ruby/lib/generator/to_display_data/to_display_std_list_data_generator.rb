@@ -4,30 +4,30 @@ require_relative '../to_display_field_data_generator'
 class ToDisplayStdListDataGenerator < ToDisplayFieldDataGenerator
 
   def generate_required_display_data_code
-    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}()#{value_map_code});\n"
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{list_map_code("#{field_conf.getter_name}()")});\n"
   end
 
   def generate_optional_variable_display_data_code
-    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}#{value_map_code});\n"
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{list_map_code(temp_field_name)});\n"
   end
 
   private
-  def value_map_code
+  def list_map_code(variable_name)
     case field_conf.value
     when 'object'
-      ".stream().map(#{field_conf.model}::toDisplayData).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name})"
     when 'date'
-      ".stream().map(LocalDate::toString).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, LocalDate::toString)"
     when 'time'
-      ".stream().map(BsonModelConstants.TIME_FORMATTER::format).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, BsonModelConstants.TIME_FORMATTER::format)"
     when 'datetime'
-      ".stream().map(BsonModelConstants.DATETIME_FORMATTER::format).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, BsonModelConstants.DATETIME_FORMATTER::format)"
     when 'object-id'
-      ".stream().map(ObjectId::toHexString).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, ObjectId::toHexString)"
     when 'uuid'
-      ".stream().map(UUID::toString).toList()"
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, UUID::toString)"
     else
-      ''
+      "new ArrayList<>(#{variable_name})"
     end
   end
 

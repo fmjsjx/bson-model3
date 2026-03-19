@@ -40,7 +40,7 @@ class LoadStdListGenerator < LoadFieldGenerator
         'BsonValueUtil::mapToUuidList'
       end
     when 'object'
-      "it -> BsonValueUtils.mapToObjectList(it, (bson) -> new #{field_conf.name}().load(bson))"
+      "it -> BsonValueUtil.mapToObjectList(it, (bson) -> new #{field_conf.model}().load(bson))"
     else
       raise ArgumentError, "Unsupported value type: #{value_type}"
     end

@@ -31,7 +31,7 @@ class ConstsGenerator
 
   def generate_store_names
     code = ''
-    fields = @model_conf.fields.filter { |field| field.store_field? }
+    fields = @model_conf.fields.filter { |field| field.store_field? or field.readonly? }
     unless fields.empty?
       code << "\n"
       fields.each do |field|

@@ -2,6 +2,7 @@ package com.github.fmjsjx.bson.model3.core;
 
 import com.alibaba.fastjson2.JSONFactory;
 import com.github.fmjsjx.bson.model3.core.model.Equipment;
+import com.github.fmjsjx.bson.model3.core.model.GeoJsonPoint;
 import com.github.fmjsjx.bson.model3.core.model.Player;
 import com.github.fmjsjx.libcommon.json.Fastjson2Library;
 import com.github.fmjsjx.libcommon.json.Jackson3Library;
@@ -31,6 +32,15 @@ public class TestModel {
                 {"key1":"value1","key2":"value2"}""");
         player.getPreferences().setFeatures(List.of("guide", "arena"));
         player.getPreferences().getAttributes().put("channel", "test");
+        player.getLogin().setCount(1);
+        player.getLogin().setDays(1);
+        player.getLogin().setContinuousDays(1);
+        player.getLogin().setMaxContinuousDays(1);
+        player.getLogin().setLastLoginTime(player.getBasicInfo().getCreatedTime());
+        player.getLogin().setLastLoginIp("127.0.0.1");
+        var lastLoginLocation = new GeoJsonPoint();
+        lastLoginLocation.setCoordinates(List.of(121.473701, 31.230416));
+        player.getLogin().setLastLoginLocation(lastLoginLocation);
         player.getWallet().setCoinTotal(1000);
         player.getWallet().setCoinConsumed(200);
         player.getWallet().setDiamondTotal(200);
