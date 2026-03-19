@@ -159,7 +159,14 @@ class ModelGenerator
     code << "    protected #{@model_name} resetChildren() {\n"
     @store_fields.each do |field_conf|
       if field_conf.has_children?
-        code << "        #{field_conf.name}.reset();\n"
+        if field_conf.required?
+          code << "        #{field_conf.getter_name}().reset();\n"
+        else
+          code << "        var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+          code << "        if (_#{field_conf.name} != null) {\n"
+          code << "            _#{field_conf.name}.reset();\n"
+          code << "        }\n"
+        end
       end
     end
     code << "        return this;\n"

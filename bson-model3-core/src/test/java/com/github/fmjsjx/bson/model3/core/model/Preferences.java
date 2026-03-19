@@ -104,7 +104,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
 
     @Override
     protected Preferences resetChildren() {
-        attributes.reset();
+        getAttributes().reset();
         return this;
     }
 
@@ -112,7 +112,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
     protected Preferences cleanFields() {
         custom = null;
         features = null;
-        attributes.clean();
+        getAttributes().clean();
         return this;
     }
 

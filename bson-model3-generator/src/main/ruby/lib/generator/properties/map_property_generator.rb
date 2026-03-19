@@ -78,7 +78,7 @@ class MapPropertyGenerator < PropertyGenerator
 
   private
   def parse_generic_type
-    if field_conf.type == 'object'
+    if field_conf.value == 'object'
       "DefaultMapModel<#{key_type}, #{value_type}>"
     else
       "SingleValueMapModel<#{key_type}, #{value_type}>"

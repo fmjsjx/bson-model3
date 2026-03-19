@@ -43,10 +43,20 @@ class AppendUpdatedFieldDataGenerator
 
   def generate_append_code
     code = ''
-    code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
-    code << "            if (#{@temp_field_name} != null) {\n"
-    code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
-    code << "            }\n"
+    if field_conf.required?
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
+      code << "            }\n"
+    else
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                var #{@temp_field_name}Updated = #{@temp_field_name}.toUpdated();\n"
+      code << "                if (#{@temp_field_name}Updated != null) {\n"
+      code << "                    data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name}Updated);\n"
+      code << "                }\n"
+      code << "            }\n"
+    end
   end
 
 end

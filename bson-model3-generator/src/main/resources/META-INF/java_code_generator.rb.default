@@ -635,7 +635,7 @@ module StoreData
         when 'decimal'
           SimplePropertyGenerator.new(config, model_conf, field_conf, 'BigDecimal')
         when 'object'
-          SimplePropertyGenerator.new(config, model_conf, field_conf, "#{field_conf.model}.#{field_conf.model}StoreData")
+          ObjectPropertyGenerator.new(config, model_conf, field_conf)
         when 'map'
           MapPropertyGenerator.new(config, model_conf, field_conf)
         when 'std-list'
@@ -693,6 +693,8 @@ module StoreData
   
 end
 
+
+
 module StoreData
 
   class SimplePropertyGenerator < PropertyGenerator
@@ -739,6 +741,8 @@ module StoreData
   end
 
 end
+
+
 
 module StoreData
 
@@ -806,6 +810,8 @@ module StoreData
 
 end
 
+
+
 module StoreData
 
   class StdListPropertyGenerator < PropertyGenerator
@@ -869,6 +875,51 @@ module StoreData
         "#{@field_conf.model}.#{@field_conf.model}StoreData"
       else
         raise ArgumentError, "Unsupported value type: #{value}"
+      end
+    end
+
+  end
+
+end
+
+
+
+module StoreData
+
+  class ObjectPropertyGenerator < PropertyGenerator
+
+    attr_reader :type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+      @type = parse_type(field_conf)
+    end
+
+    def generate_field_declaration_code
+      code = generate_field_json_annotations_code
+      code << "        private #{@type} #{@field_conf.name};\n"
+    end
+
+    def generate_getter_code
+      code = ''
+      code << "        public #{@type} #{@field_conf.getter_name}() {\n"
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      code << "        public void #{@field_conf.setter_name}(#{@type} #{@field_conf.name}) {\n"
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    private
+    def parse_type(field_conf)
+      if field_conf.required?
+        "#{field_conf.model}.#{field_conf.model}StoreData"
+      else
+        "#{field_conf.model}.@Nullable #{field_conf.model}StoreData"
       end
     end
 
@@ -2258,7 +2309,7 @@ class MapPropertyGenerator < PropertyGenerator
 
   private
   def parse_generic_type
-    if field_conf.type == 'object'
+    if field_conf.value == 'object'
       "DefaultMapModel<#{key_type}, #{value_type}>"
     else
       "SingleValueMapModel<#{key_type}, #{value_type}>"
@@ -2472,12 +2523,12 @@ class CleanFieldGenerator
   end
 
   def generate_required_clean_code
-    "        #{@field_conf.name}.clean();\n"
+    "        #{@field_conf.getter_name}().clean();\n"
   end
 
   def generate_optional_clean_code
     code = ''
-    code << "        var _#{@field_conf.name} = #{@field_conf.name};\n"
+    code << "        var _#{@field_conf.name} = #{@field_conf.getter_name}();\n"
     code << "        if (_#{@field_conf.name} != null) {\n"
     code << "            _#{@field_conf.name}.clean().detach();\n"
     code << "            #{@field_conf.name} = null;\n"
@@ -3145,10 +3196,20 @@ class AppendUpdatedFieldDataGenerator
 
   def generate_append_code
     code = ''
-    code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
-    code << "            if (#{@temp_field_name} != null) {\n"
-    code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
-    code << "            }\n"
+    if field_conf.required?
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
+      code << "            }\n"
+    else
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                var #{@temp_field_name}Updated = #{@temp_field_name}.toUpdated();\n"
+      code << "                if (#{@temp_field_name}Updated != null) {\n"
+      code << "                    data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name}Updated);\n"
+      code << "                }\n"
+      code << "            }\n"
+    end
   end
 
 end
@@ -3926,16 +3987,16 @@ class LoadFieldGenerator
     code << "                it -> {\n"
     code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
     code << "                    if (#{@temp_field_name} != null) {\n"
-    code << "                        #{@temp_field_name}.unbind()\n"
+    code << "                        #{@temp_field_name}.detach();\n"
     code << "                    }\n"
-    code << "                    this.#{@field_conf.name} = new #{@field_conf.name}()\n"
+    code << "                    this.#{@field_conf.name} = new #{@field_conf.model}()\n"
     code << "                            .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name})\n"
     code << "                            .load(it);\n"
     code << "                },\n"
     code << "                () -> {\n"
     code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
     code << "                    if (#{@temp_field_name} != null) {\n"
-    code << "                        #{@temp_field_name}.unbind()\n"
+    code << "                        #{@temp_field_name}.detach();\n"
     code << "                        this.#{@field_conf.name} = null;\n"
     code << "                    }\n"
     code << "                }\n"
@@ -4654,7 +4715,9 @@ class LoadStoreFieldDataGenerator
   end
 
   def generate_optional_variable_load_store_data_code
-    "                #{@field_conf.name} = new #{@field_conf.model}().parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
+    code = ''
+    code << "                #{@field_conf.name} = new #{@field_conf.model}()\n"
+    code << "                        .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
   end
 
 end
@@ -4995,7 +5058,7 @@ class DeletedGenerator
   def generate_deleted_size_code
     code = ''
     code << "    @Override\n"
-    code << "    public boolean anyDeleted() {\n"
+    code << "    public int deletedSize() {\n"
     code << "        if (isFullUpdate()) {\n"
     code << "            return 0;\n"
     code << "        }\n"
@@ -5294,7 +5357,14 @@ class ModelGenerator
     code << "    protected #{@model_name} resetChildren() {\n"
     @store_fields.each do |field_conf|
       if field_conf.has_children?
-        code << "        #{field_conf.name}.reset();\n"
+        if field_conf.required?
+          code << "        #{field_conf.getter_name}().reset();\n"
+        else
+          code << "        var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+          code << "        if (_#{field_conf.name} != null) {\n"
+          code << "            _#{field_conf.name}.reset();\n"
+          code << "        }\n"
+        end
       end
     end
     code << "        return this;\n"

@@ -38,7 +38,7 @@ class DeletedGenerator
   def generate_deleted_size_code
     code = ''
     code << "    @Override\n"
-    code << "    public boolean anyDeleted() {\n"
+    code << "    public int deletedSize() {\n"
     code << "        if (isFullUpdate()) {\n"
     code << "            return 0;\n"
     code << "        }\n"

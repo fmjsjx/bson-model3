@@ -19,7 +19,7 @@ module StoreData
         when 'decimal'
           SimplePropertyGenerator.new(config, model_conf, field_conf, 'BigDecimal')
         when 'object'
-          SimplePropertyGenerator.new(config, model_conf, field_conf, "#{field_conf.model}.#{field_conf.model}StoreData")
+          ObjectPropertyGenerator.new(config, model_conf, field_conf)
         when 'map'
           MapPropertyGenerator.new(config, model_conf, field_conf)
         when 'std-list'
@@ -80,3 +80,4 @@ end
 require_relative 'properties/simple_property_generator'
 require_relative 'properties/map_property_generator'
 require_relative 'properties/std_list_property_generator'
+require_relative 'properties/object_property_generator'

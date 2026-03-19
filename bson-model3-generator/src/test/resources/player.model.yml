@@ -30,6 +30,9 @@ models:
       - name: preferences p
         type: object required
         model: Preferences
+      - name: login l
+        type: object required
+        model: LoginInfo
       - name: wallet w
         type: object required
         model: Wallet
@@ -85,6 +88,31 @@ models:
         type: map required
         key: string
         value: string
+  - name: LoginInfo
+    type: object
+    fields:
+      - name: count c
+        type: int required increment
+      - name: days d
+        type: int required increment
+      - name: continuousDays cd
+        type: int required increment
+      - name: maxContinuousDays mcd
+        type: int required
+      - name: lastLoginTime llt
+        type: datetime required hidden
+      - name: lastLoggedInAt
+        type: long virtual required
+        sources:
+          - lastLoginTime
+        imports:
+          - com.github.fmjsjx.libcommon.util.DateTimeUtil
+        expression: DateTimeUtil.toEpochMilli(getLastLoginTime())
+      - name: lastLoginIp lli
+        type: string required
+      - name: lastLoginLocation lll
+        type: object
+        model: GeoJsonPoint
   - name: Wallet
     type: object
     fields:

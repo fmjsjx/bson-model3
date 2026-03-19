@@ -1,3 +1,6 @@
+require_relative '../property_generator'
+
+
 module StoreData
 
   class StdListPropertyGenerator < PropertyGenerator

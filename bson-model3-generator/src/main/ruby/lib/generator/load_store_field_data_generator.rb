@@ -57,7 +57,9 @@ class LoadStoreFieldDataGenerator
   end
 
   def generate_optional_variable_load_store_data_code
-    "                #{@field_conf.name} = new #{@field_conf.model}().parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
+    code = ''
+    code << "                #{@field_conf.name} = new #{@field_conf.model}()\n"
+    code << "                        .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
   end
 
 end

@@ -68,12 +68,12 @@ class CleanFieldGenerator
   end
 
   def generate_required_clean_code
-    "        #{@field_conf.name}.clean();\n"
+    "        #{@field_conf.getter_name}().clean();\n"
   end
 
   def generate_optional_clean_code
     code = ''
-    code << "        var _#{@field_conf.name} = #{@field_conf.name};\n"
+    code << "        var _#{@field_conf.name} = #{@field_conf.getter_name}();\n"
     code << "        if (_#{@field_conf.name} != null) {\n"
     code << "            _#{@field_conf.name}.clean().detach();\n"
     code << "            #{@field_conf.name} = null;\n"
