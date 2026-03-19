@@ -121,3 +121,26 @@ models:
         type: int required
       - name: hp h
         type: int required
+  - name: GeoJsonPoint
+    type: object
+    fields:
+      - name: type
+        type: string required
+        default: Point
+      - name: coordinates
+        type: std-list required
+        value: double
+      - name: x
+        type: double virtual required
+        annotations:
+          - '@SuppressWarnings("DataFlowIssue")'
+        sources:
+          - coordinates
+        expression: getCoordinates().getFirst()
+      - name: y
+        type: double virtual required
+        annotations:
+          - '@SuppressWarnings("DataFlowIssue")'
+        sources:
+          - coordinates
+        expression: getCoordinates().get(1)

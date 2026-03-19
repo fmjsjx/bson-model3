@@ -45,10 +45,11 @@ class FieldConf
       key = config['key']
       value = config['value']
       sources = config['sources']
+      annotations = config['annotations']
       imports = config['imports']
       block = config['block']
       expression = config['expression']
-      new(index, name, type, default, model, key, value, sources, imports, block, expression)
+      new(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
     end
   end
 
@@ -63,10 +64,11 @@ class FieldConf
               :value,
               :sources,
               :imports,
+              :annotations,
               :block,
               :expression
 
-  def initialize(index, name, type, default, model, key, value, sources, imports, block, expression)
+  def initialize(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
     if index.nil?
       raise ArgumentError, 'index is required on field'
     end
@@ -79,6 +81,7 @@ class FieldConf
     @value = value.to_s unless value.nil?
     @sources = parse_sources(sources)
     @imports = parse_imports(imports)
+    @annotations = parse_annotations(annotations)    
     @block = block.to_s unless block.nil?
     @expression = expression.to_s unless expression.nil?
   end
@@ -238,16 +241,22 @@ class FieldConf
 
   def parse_string_array(array, name)
     if array.nil?
-      return []
-    end
-    unless array.is_a?(Array)
+      []
+    elsif array.is_a?(String)
+      [array]
+    elsif array.is_a?(Array)
+      array.map { |item| item.to_s }
+    else
       raise ArgumentError, "#{name} must be an array on field"
     end
-    array.map { |item| item.to_s }
   end
 
   def parse_imports(imports)
     parse_string_array(imports, 'imports')
+  end
+
+  def parse_annotations(annotations)
+    parse_string_array(annotations, 'annotations')
   end
 
 end
@@ -810,18 +819,18 @@ module StoreData
     def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
-        code << "        private List<#{value_type}> #{@field_conf.name};\n"
+        code << "        private List<@Nullable #{value_type}> #{@field_conf.name};\n"
       else
-        code << "        private @Nullable List<#{value_type}> #{@field_conf.name};\n"
+        code << "        private @Nullable List<@Nullable #{value_type}> #{@field_conf.name};\n"
       end
     end
 
     def generate_getter_code
       code = ''
       if required?
-        code << "        public List<#{value_type}> #{@field_conf.getter_name}() {\n"
+        code << "        public List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
       else
-        code << "        public @Nullable List<#{value_type}> #{@field_conf.getter_name}() {\n"
+        code << "        public @Nullable List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
       end
       code << "            return #{@field_conf.name};\n"
       code << "        }\n"
@@ -830,9 +839,9 @@ module StoreData
     def generate_setter_code
       code = ''
       if required?
-        code << "        public void #{@field_conf.setter_name}(List<#{value_type}> #{@field_conf.name}) {\n"
+        code << "        public void #{@field_conf.setter_name}(List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
       else
-        code << "        public void #{@field_conf.setter_name}(@Nullable List<#{value_type}> #{@field_conf.name}) {\n"
+        code << "        public void #{@field_conf.setter_name}(@Nullable List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
       end
       code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
       code << "        }\n"
@@ -1036,39 +1045,36 @@ end
 
 class DefaultValue
 
-  @@instance = DefaultValue.new
-
   class << self
 
-    def from(field_conf)
+    def generate_code(config, model_conf, field_conf)
       case field_conf.type
       when 'int'
-        IntDefaultValue.instance
+        IntDefaultValue.generate_code(config, model_conf, field_conf)
       when 'long'
-        LongDefaultValue.instance
+        LongDefaultValue.generate_code(config, model_conf, field_conf)
       when 'double'
-        DoubleDefaultValue.instance
+        DoubleDefaultValue.generate_code(config, model_conf, field_conf)
       when 'decimal'
-        DecimalDefaultValue.instance
+        DecimalDefaultValue.generate_code(config, model_conf, field_conf)
       when 'boolean'
-        BooleanDefaultValue.instance
+        BooleanDefaultValue.generate_code(config, model_conf, field_conf)
       when 'string'
-        StringDefaultValue.instance
+        StringDefaultValue.generate_code(config, model_conf, field_conf)
       when 'date'
-        DateDefaultValue.instance
+        DateDefaultValue.generate_code(config, model_conf, field_conf)
       when 'time'
-        TimeDefaultValue.instance
+        TimeDefaultValue.generate_code(config, model_conf, field_conf)
       when 'datetime'
-        DateTimeDefaultValue.instance
+        DateTimeDefaultValue.generate_code(config, model_conf, field_conf)
       else
-        @@instance
+        field_conf.default
       end
     end
+
   end
 
-  def generate_code(config, model_conf, field_conf)
-    field_conf.default
-  end
+
 
 end
 
@@ -1076,22 +1082,16 @@ end
 
 class LongDefaultValue < DefaultValue
 
-  @@instance = LongDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    case field_conf.default.upcase
-    when 'MIN'
-      'Long.MIN_VALUE'
-    when 'MAX'
-      'Long.MAX_VALUE'
-    else
-      field_conf.default
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'MIN'
+        'Long.MIN_VALUE'
+      when 'MAX'
+        'Long.MAX_VALUE'
+      else
+        field_conf.default
+      end
     end
   end
 
@@ -1101,28 +1101,22 @@ end
 
 class DoubleDefaultValue < DefaultValue
 
-  @@instance = DoubleDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    case field_conf.default.upcase
-    when 'NAN'
-      'Double.NaN'
-    when '+INF'
-      'Double.POSITIVE_INFINITY'
-    when '-INF'
-      'Double.NEGATIVE_INFINITY'
-    when 'MIN'
-      'Double.MIN_VALUE'
-    when 'MAX'
-      'Double.MAX_VALUE'
-    else
-      field_conf.default
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'NAN'
+        'Double.NaN'
+      when '+INF'
+        'Double.POSITIVE_INFINITY'
+      when '-INF'
+        'Double.NEGATIVE_INFINITY'
+      when 'MIN'
+        'Double.MIN_VALUE'
+      when 'MAX'
+        'Double.MAX_VALUE'
+      else
+        field_conf.default
+      end
     end
   end
 
@@ -1132,28 +1126,22 @@ end
 
 class DecimalDefaultValue < DefaultValue
 
-  @@instance = DecimalDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    value = field_conf.default
-    case value.upcase
-    when 'ZERO'
-      'BigDecimal.ZERO'
-    when 'ONE'
-      'BigDecimal.ONE'
-    when 'TEN'
-      'BigDecimal.TEN'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'decimal' and const_conf.name == value }
-        value
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'ZERO'
+        'BigDecimal.ZERO'
+      when 'ONE'
+        'BigDecimal.ONE'
+      when 'TEN'
+        'BigDecimal.TEN'
       else
-        "new BigDecimal(\"#{value}\")"
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'decimal' and const_conf.name == value }
+          value
+        else
+          "new BigDecimal(\"#{value}\")"
+        end
       end
     end
   end
@@ -1164,20 +1152,14 @@ end
 
 class BooleanDefaultValue < DefaultValue
 
-  @@instance = BooleanDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    case field_conf.default.downcase
-    when 'true', '1', 'yes', 'y', 'on'
-      'true'
-    else
-      'false'
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.downcase
+      when 'true', '1', 'yes', 'y', 'on'
+        'true'
+      else
+        'false'
+      end
     end
   end
 
@@ -1188,16 +1170,10 @@ require 'json'
 
 class StringDefaultValue < DefaultValue
 
-  @@instance = StringDefaultValue.new
-
   class << self
-    def instance
-      @@instance
+    def generate_code(config, model_conf, field_conf)
+      field_conf.default.to_json
     end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    field_conf.default.to_json
   end
 
 end
@@ -1207,30 +1183,24 @@ require 'json'
 
 class DateDefaultValue < DefaultValue
 
-  @@instance = DateDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalDate.MIN'
-    when 'MAX'
-      'LocalDate.MAX'
-    when 'EPOCH'
-      'LocalDate.EPOCH'
-    when 'NOW'
-      'LocalDate.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
-        value
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalDate.MIN'
+      when 'MAX'
+        'LocalDate.MAX'
+      when 'EPOCH'
+        'LocalDate.EPOCH'
+      when 'NOW'
+        'LocalDate.now()'
       else
-        "LocalDate.parse(#{value.to_json})"
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
+          value
+        else
+          "LocalDate.parse(#{value.to_json})"
+        end
       end
     end
   end
@@ -1242,32 +1212,26 @@ require 'json'
 
 class TimeDefaultValue < DefaultValue
 
-  @@instance = TimeDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalTime.MIN'
-    when 'MAX'
-      'LocalTime.MAX'
-    when 'MIDNIGHT'
-      'LocalTime.MIDNIGHT'
-    when 'NOON'
-      'LocalTime.NOON'
-    when 'NOW'
-      'LocalTime.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
-        value
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalTime.MIN'
+      when 'MAX'
+        'LocalTime.MAX'
+      when 'MIDNIGHT'
+        'LocalTime.MIDNIGHT'
+      when 'NOON'
+        'LocalTime.NOON'
+      when 'NOW'
+        'LocalTime.now()'
       else
-        "LocalTime.parse(#{value.to_json})"
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
+          value
+        else
+          "LocalTime.parse(#{value.to_json})"
+        end
       end
     end
   end
@@ -1279,30 +1243,24 @@ require 'json'
 
 class DateTimeDefaultValue < DefaultValue
 
-  @@instance = DateTimeDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    value = field_conf.default
-    case value.upcase
-    when 'MIN'
-      'LocalDateTime.MIN'
-    when 'MAX'
-      'LocalDateTime.MAX'
-    when 'EPOCH'
-      'BsonModelConstants.EPOCH_DATE_TIME'
-    when 'NOW'
-      'LocalDateTime.now()'
-    else
-      if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
-        value
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalDateTime.MIN'
+      when 'MAX'
+        'LocalDateTime.MAX'
+      when 'EPOCH'
+        'BsonModelConstants.EPOCH_DATE_TIME'
+      when 'NOW'
+        'LocalDateTime.now()'
       else
-        "LocalDateTime.parse(#{value.to_json})"
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
+          value
+        else
+          "LocalDateTime.parse(#{value.to_json})"
+        end
       end
     end
   end
@@ -1314,22 +1272,16 @@ end
 
 class IntDefaultValue < DefaultValue
 
-  @@instance = IntDefaultValue.new
-
   class << self
-    def instance
-      @@instance
-    end
-  end
-
-  def generate_code(config, model_conf, field_conf)
-    case field_conf.default.upcase
-    when 'MIN'
-      'Integer.MIN_VALUE'
-    when 'MAX'
-      'Integer.MAX_VALUE'
-    else
-      field_conf.default
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'MIN'
+        'Integer.MIN_VALUE'
+      when 'MAX'
+        'Integer.MAX_VALUE'
+      else
+        field_conf.default
+      end
     end
   end
 
@@ -1415,7 +1367,7 @@ class IntPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code 
-    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1498,7 +1450,7 @@ class LongPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1567,7 +1519,7 @@ class DoublePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1632,7 +1584,7 @@ class DecimalPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1697,7 +1649,7 @@ class BooleanPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    BooleanDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1762,7 +1714,7 @@ class StringPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    StringDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    StringDefaultValue.generate_code(config, model_conf, field_conf)
   end
 
 end
@@ -1827,7 +1779,7 @@ class DatePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    DateDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1892,7 +1844,7 @@ class TimePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -1957,7 +1909,7 @@ class DateTimePropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    DateTimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2431,6 +2383,9 @@ class PropertiesGenerator
     @property_generators.each do |property_generator|
       # generate getter
       code << "\n"
+      property_generator.field_conf.annotations.each do |annotation|
+        code << "    #{annotation}\n"
+      end
       code << property_generator.generate_getter_code
       unless property_generator.no_setter?
         # generate setter
@@ -2550,7 +2505,7 @@ class CleanIntFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2573,7 +2528,7 @@ class CleanLongFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    LongDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2597,7 +2552,7 @@ class CleanDoubleFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DoubleDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2621,7 +2576,7 @@ class CleanDecimalFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2644,7 +2599,7 @@ class CleanBooleanFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    BooleanDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2668,7 +2623,7 @@ class CleanStringFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    StringDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    StringDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2692,7 +2647,7 @@ class CleanDateFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DateDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2716,7 +2671,7 @@ class CleanTimeFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    TimeDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -2740,7 +2695,7 @@ class CleanDateTimeFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DateTimeDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4013,7 +3968,7 @@ class LoadIntGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    IntDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4041,7 +3996,7 @@ class LoadLongGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4069,7 +4024,7 @@ class LoadDoubleGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4097,7 +4052,7 @@ class LoadDecimalGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4124,7 +4079,7 @@ class LoadBooleanGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    BooleanDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4152,7 +4107,7 @@ class LoadStringGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    StringDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    StringDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4180,7 +4135,7 @@ class LoadDateGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DateDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4208,7 +4163,7 @@ class LoadTimeGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
@@ -4236,7 +4191,7 @@ class LoadDateTimeGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DateTimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

@@ -18,7 +18,7 @@ class CleanDoubleFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DoubleDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

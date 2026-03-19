@@ -9,10 +9,11 @@ class FieldConf
       key = config['key']
       value = config['value']
       sources = config['sources']
+      annotations = config['annotations']
       imports = config['imports']
       block = config['block']
       expression = config['expression']
-      new(index, name, type, default, model, key, value, sources, imports, block, expression)
+      new(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
     end
   end
 
@@ -27,10 +28,11 @@ class FieldConf
               :value,
               :sources,
               :imports,
+              :annotations,
               :block,
               :expression
 
-  def initialize(index, name, type, default, model, key, value, sources, imports, block, expression)
+  def initialize(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
     if index.nil?
       raise ArgumentError, 'index is required on field'
     end
@@ -43,6 +45,7 @@ class FieldConf
     @value = value.to_s unless value.nil?
     @sources = parse_sources(sources)
     @imports = parse_imports(imports)
+    @annotations = parse_annotations(annotations)    
     @block = block.to_s unless block.nil?
     @expression = expression.to_s unless expression.nil?
   end
@@ -202,16 +205,22 @@ class FieldConf
 
   def parse_string_array(array, name)
     if array.nil?
-      return []
-    end
-    unless array.is_a?(Array)
+      []
+    elsif array.is_a?(String)
+      [array]
+    elsif array.is_a?(Array)
+      array.map { |item| item.to_s }
+    else
       raise ArgumentError, "#{name} must be an array on field"
     end
-    array.map { |item| item.to_s }
   end
 
   def parse_imports(imports)
     parse_string_array(imports, 'imports')
+  end
+
+  def parse_annotations(annotations)
+    parse_string_array(annotations, 'annotations')
   end
 
 end

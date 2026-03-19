@@ -60,7 +60,7 @@ class DecimalPropertyGenerator < PropertyGenerator
 
   private
   def default_value_code
-    DecimalDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

@@ -23,7 +23,7 @@ class LoadIntGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    IntDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

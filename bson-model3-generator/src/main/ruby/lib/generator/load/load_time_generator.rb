@@ -23,7 +23,7 @@ class LoadTimeGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    TimeDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

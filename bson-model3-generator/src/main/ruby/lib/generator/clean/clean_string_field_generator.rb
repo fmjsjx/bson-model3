@@ -18,7 +18,7 @@ class CleanStringFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    StringDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    StringDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

@@ -18,7 +18,7 @@ class CleanDateFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    DateDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

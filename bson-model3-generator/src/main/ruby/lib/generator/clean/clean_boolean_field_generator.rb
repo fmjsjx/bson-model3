@@ -18,7 +18,7 @@ class CleanBooleanFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    BooleanDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

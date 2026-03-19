@@ -23,7 +23,7 @@ class LoadLongGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    LongDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

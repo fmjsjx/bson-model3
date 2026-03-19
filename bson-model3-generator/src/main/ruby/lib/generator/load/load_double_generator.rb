@@ -23,7 +23,7 @@ class LoadDoubleGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DoubleDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

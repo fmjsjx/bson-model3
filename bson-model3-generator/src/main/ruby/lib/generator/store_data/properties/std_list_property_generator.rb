@@ -11,18 +11,18 @@ module StoreData
     def generate_field_declaration_code
       code = generate_field_json_annotations_code
       if required?
-        code << "        private List<#{value_type}> #{@field_conf.name};\n"
+        code << "        private List<@Nullable #{value_type}> #{@field_conf.name};\n"
       else
-        code << "        private @Nullable List<#{value_type}> #{@field_conf.name};\n"
+        code << "        private @Nullable List<@Nullable #{value_type}> #{@field_conf.name};\n"
       end
     end
 
     def generate_getter_code
       code = ''
       if required?
-        code << "        public List<#{value_type}> #{@field_conf.getter_name}() {\n"
+        code << "        public List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
       else
-        code << "        public @Nullable List<#{value_type}> #{@field_conf.getter_name}() {\n"
+        code << "        public @Nullable List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
       end
       code << "            return #{@field_conf.name};\n"
       code << "        }\n"
@@ -31,9 +31,9 @@ module StoreData
     def generate_setter_code
       code = ''
       if required?
-        code << "        public void #{@field_conf.setter_name}(List<#{value_type}> #{@field_conf.name}) {\n"
+        code << "        public void #{@field_conf.setter_name}(List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
       else
-        code << "        public void #{@field_conf.setter_name}(@Nullable List<#{value_type}> #{@field_conf.name}) {\n"
+        code << "        public void #{@field_conf.setter_name}(@Nullable List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
       end
       code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
       code << "        }\n"

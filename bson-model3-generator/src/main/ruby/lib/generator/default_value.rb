@@ -1,38 +1,35 @@
 class DefaultValue
 
-  @@instance = DefaultValue.new
-
   class << self
 
-    def from(field_conf)
+    def generate_code(config, model_conf, field_conf)
       case field_conf.type
       when 'int'
-        IntDefaultValue.instance
+        IntDefaultValue.generate_code(config, model_conf, field_conf)
       when 'long'
-        LongDefaultValue.instance
+        LongDefaultValue.generate_code(config, model_conf, field_conf)
       when 'double'
-        DoubleDefaultValue.instance
+        DoubleDefaultValue.generate_code(config, model_conf, field_conf)
       when 'decimal'
-        DecimalDefaultValue.instance
+        DecimalDefaultValue.generate_code(config, model_conf, field_conf)
       when 'boolean'
-        BooleanDefaultValue.instance
+        BooleanDefaultValue.generate_code(config, model_conf, field_conf)
       when 'string'
-        StringDefaultValue.instance
+        StringDefaultValue.generate_code(config, model_conf, field_conf)
       when 'date'
-        DateDefaultValue.instance
+        DateDefaultValue.generate_code(config, model_conf, field_conf)
       when 'time'
-        TimeDefaultValue.instance
+        TimeDefaultValue.generate_code(config, model_conf, field_conf)
       when 'datetime'
-        DateTimeDefaultValue.instance
+        DateTimeDefaultValue.generate_code(config, model_conf, field_conf)
       else
-        @@instance
+        field_conf.default
       end
     end
+
   end
 
-  def generate_code(config, model_conf, field_conf)
-    field_conf.default
-  end
+
 
 end
 

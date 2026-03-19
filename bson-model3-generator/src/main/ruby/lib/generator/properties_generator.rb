@@ -34,6 +34,9 @@ class PropertiesGenerator
     @property_generators.each do |property_generator|
       # generate getter
       code << "\n"
+      property_generator.field_conf.annotations.each do |annotation|
+        code << "    #{annotation}\n"
+      end
       code << property_generator.generate_getter_code
       unless property_generator.no_setter?
         # generate setter

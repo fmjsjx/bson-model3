@@ -23,7 +23,7 @@ class LoadDateGenerator < LoadFieldGenerator
   end
 
   def default_value_code
-    DateDefaultValue.instance.generate_code(@config, @model_conf, @field_conf)
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end

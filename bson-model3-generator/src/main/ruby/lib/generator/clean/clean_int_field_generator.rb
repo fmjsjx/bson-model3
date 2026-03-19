@@ -18,7 +18,7 @@ class CleanIntFieldGenerator < CleanFieldGenerator
 
   private
   def default_value_code
-    IntDefaultValue.generate_class_code(@config, @model_conf, @field_conf)
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
   end
 
 end
