@@ -363,7 +363,7 @@ public final class LoginInfo extends AbstractObjectModel<LoginInfo> {
         _bsonValue.put(STORE_NAME_LAST_LOGIN_IP, new BsonString(getLastLoginIp()));
         var _lastLoginLocation = getLastLoginLocation();
         if (_lastLoginLocation != null) {
-            _bsonValue.append(STORE_NAME_LAST_LOGIN_LOCATION, _lastLoginLocation.toBsonValue());
+            _bsonValue.put(STORE_NAME_LAST_LOGIN_LOCATION, _lastLoginLocation.toBsonValue());
         }
         return _bsonValue;
     }
@@ -562,4 +562,3 @@ public final class LoginInfo extends AbstractObjectModel<LoginInfo> {
     }
 
 }
-

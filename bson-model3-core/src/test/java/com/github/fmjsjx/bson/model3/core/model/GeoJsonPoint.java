@@ -135,7 +135,7 @@ public final class GeoJsonPoint extends AbstractObjectModel<GeoJsonPoint> {
     public Map<String, ?> toDisplayData() {
         var _displayData = new LinkedHashMap<String, Object>();
         _displayData.put(DISPLAY_NAME_TYPE, getType());
-        _displayData.put(DISPLAY_NAME_COORDINATES, getCoordinates());
+        _displayData.put(DISPLAY_NAME_COORDINATES, new ArrayList<>(getCoordinates()));
         _displayData.put(DISPLAY_NAME_X, getX());
         _displayData.put(DISPLAY_NAME_Y, getY());
         return _displayData;

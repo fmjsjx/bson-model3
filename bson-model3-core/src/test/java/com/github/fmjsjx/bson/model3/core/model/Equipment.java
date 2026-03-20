@@ -1,19 +1,15 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
 import com.alibaba.fastjson2.annotation.JSONType;
-import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
-import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
+import com.github.fmjsjx.bson.model3.core.*;
+import com.github.fmjsjx.bson.model3.core.util.*;
 import com.mongodb.client.model.Updates;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @NullMarked
 public final class Equipment extends AbstractObjectModel<Equipment> {
@@ -38,7 +34,6 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
 
     @JSONType(alphabetic = false)
     public static final class EquipmentStoreData {
-
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_ID)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_ID)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_ID)
@@ -99,7 +94,6 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
         public void setHp(int hp) {
             this.hp = hp;
         }
-
     }
 
     private String id = "";
@@ -233,11 +227,11 @@ public final class Equipment extends AbstractObjectModel<Equipment> {
     @Override
     public BsonDocument toBsonValue() {
         var _bsonValue = new BsonDocument();
-        _bsonValue.append(STORE_NAME_ID, new BsonString(getId()));
-        _bsonValue.append(STORE_NAME_REF_ID, new BsonInt32(getRefId()));
-        _bsonValue.append(STORE_NAME_ATK, new BsonInt32(getAtk()));
-        _bsonValue.append(STORE_NAME_DEF, new BsonInt32(getDef()));
-        _bsonValue.append(STORE_NAME_HP, new BsonInt32(getHp()));
+        _bsonValue.put(STORE_NAME_ID, new BsonString(getId()));
+        _bsonValue.put(STORE_NAME_REF_ID, new BsonInt32(getRefId()));
+        _bsonValue.put(STORE_NAME_ATK, new BsonInt32(getAtk()));
+        _bsonValue.put(STORE_NAME_DEF, new BsonInt32(getDef()));
+        _bsonValue.put(STORE_NAME_HP, new BsonInt32(getHp()));
         return _bsonValue;
     }
 

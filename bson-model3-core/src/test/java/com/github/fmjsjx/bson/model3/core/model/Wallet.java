@@ -1,18 +1,15 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
 import com.alibaba.fastjson2.annotation.JSONType;
-import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
-import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
+import com.github.fmjsjx.bson.model3.core.*;
+import com.github.fmjsjx.bson.model3.core.util.*;
 import com.mongodb.client.model.Updates;
-import org.bson.BsonDocument;
-import org.bson.BsonInt64;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @NullMarked
 public final class Wallet extends AbstractObjectModel<Wallet> {
@@ -36,7 +33,6 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
 
     @JSONType(alphabetic = false)
     public static final class WalletStoreData {
-
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_COIN_TOTAL)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_COIN_TOTAL)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_COIN_TOTAL)
@@ -206,10 +202,10 @@ public final class Wallet extends AbstractObjectModel<Wallet> {
     @Override
     public BsonDocument toBsonValue() {
         var _bsonValue = new BsonDocument();
-        _bsonValue.append(STORE_NAME_COIN_TOTAL, new BsonInt64(getCoinTotal()));
-        _bsonValue.append(STORE_NAME_COIN_CONSUMED, new BsonInt64(getCoinConsumed()));
-        _bsonValue.append(STORE_NAME_DIAMOND_TOTAL, new BsonInt64(getDiamondTotal()));
-        _bsonValue.append(STORE_NAME_DIAMOND_CONSUMED, new BsonInt64(getDiamondConsumed()));
+        _bsonValue.put(STORE_NAME_COIN_TOTAL, new BsonInt64(getCoinTotal()));
+        _bsonValue.put(STORE_NAME_COIN_CONSUMED, new BsonInt64(getCoinConsumed()));
+        _bsonValue.put(STORE_NAME_DIAMOND_TOTAL, new BsonInt64(getDiamondTotal()));
+        _bsonValue.put(STORE_NAME_DIAMOND_CONSUMED, new BsonInt64(getDiamondConsumed()));
         return _bsonValue;
     }
 

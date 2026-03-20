@@ -53,7 +53,7 @@ class ToBsonFieldValueGenerator
   end
 
   def generate_required_bson_value_code
-    "        _bsonValue.append(#{@field_conf.store_name_const_name}, #{@field_conf.getter_name}().toBsonValue());\n"
+    "        _bsonValue.put(#{@field_conf.store_name_const_name}, #{@field_conf.getter_name}().toBsonValue());\n"
   end
 
   def generate_optional_bson_value_code
@@ -65,7 +65,7 @@ class ToBsonFieldValueGenerator
   end
 
   def generate_optional_variable_bson_value_code
-    "            _bsonValue.append(#{@field_conf.store_name_const_name}, #{@temp_field_name}.toBsonValue());\n"
+    "            _bsonValue.put(#{@field_conf.store_name_const_name}, #{@temp_field_name}.toBsonValue());\n"
   end
 
 end

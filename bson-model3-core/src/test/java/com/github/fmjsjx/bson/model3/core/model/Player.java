@@ -407,12 +407,12 @@ public final class Player extends AbstractRootModel<Player> {
     public BsonDocument toBsonValue() {
         var _bsonValue = new BsonDocument();
         _bsonValue.put(STORE_NAME_ID, new BsonInt64(getId()));
-        _bsonValue.append(STORE_NAME_BASIC_INFO, getBasicInfo().toBsonValue());
-        _bsonValue.append(STORE_NAME_PREFERENCES, getPreferences().toBsonValue());
-        _bsonValue.append(STORE_NAME_LOGIN, getLogin().toBsonValue());
-        _bsonValue.append(STORE_NAME_WALLET, getWallet().toBsonValue());
-        _bsonValue.append(STORE_NAME_EQUIPMENTS, getEquipments().toBsonValue());
-        _bsonValue.append(STORE_NAME_ITEMS, getItems().toBsonValue());
+        _bsonValue.put(STORE_NAME_BASIC_INFO, getBasicInfo().toBsonValue());
+        _bsonValue.put(STORE_NAME_PREFERENCES, getPreferences().toBsonValue());
+        _bsonValue.put(STORE_NAME_LOGIN, getLogin().toBsonValue());
+        _bsonValue.put(STORE_NAME_WALLET, getWallet().toBsonValue());
+        _bsonValue.put(STORE_NAME_EQUIPMENTS, getEquipments().toBsonValue());
+        _bsonValue.put(STORE_NAME_ITEMS, getItems().toBsonValue());
         _bsonValue.put(STORE_NAME_UPDATED_VERSION, new BsonInt32(getUpdatedVersion()));
         var _updatedTime = getUpdatedTime();
         if (_updatedTime != null) {

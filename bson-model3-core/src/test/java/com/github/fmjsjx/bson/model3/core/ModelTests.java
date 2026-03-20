@@ -1,4 +1,4 @@
-package com.github.fmjsjx.bson.model3.generator;
+package com.github.fmjsjx.bson.model3.core;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-java-package: com.github.fmjsjx.bson.model3.generator.model
+java-package: com.github.fmjsjx.bson.model3.core.model
 
 json-libs:
   - Jackson

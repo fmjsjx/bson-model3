@@ -1,15 +1,10 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
 import com.alibaba.fastjson2.annotation.JSONType;
-import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
-import com.github.fmjsjx.bson.model3.core.BsonModelConstants;
-import com.github.fmjsjx.bson.model3.core.SingleValueMapModel;
-import com.github.fmjsjx.bson.model3.core.SingleValues;
-import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
-import com.github.fmjsjx.bson.model3.core.util.BsonValueUtil;
+import com.github.fmjsjx.bson.model3.core.*;
+import com.github.fmjsjx.bson.model3.core.util.*;
 import com.mongodb.client.model.Updates;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -127,7 +122,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
             if (_custom == null) {
                 updates.add(Updates.unset(path().path(STORE_NAME_CUSTOM)));
             } else {
-                updates.add(Updates.set(path().path(STORE_NAME_CUSTOM), _custom));
+                updates.add(Updates.set(path().path(STORE_NAME_CUSTOM), new BsonString(_custom)));
             }
         }
         if (changedFields.get(FIELD_INDEX_FEATURES)) {
@@ -178,7 +173,7 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         }
         var _features = getFeatures();
         if (_features != null) {
-            _displayData.put(DISPLAY_NAME_FEATURES, _features);
+            _displayData.put(DISPLAY_NAME_FEATURES, new ArrayList<>(_features));
         }
         _displayData.put(DISPLAY_NAME_ATTRIBUTES, getAttributes().toDisplayData());
         return _displayData;
@@ -189,13 +184,13 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
         var _bsonValue = new BsonDocument();
         var _custom = getCustom();
         if (_custom != null) {
-            _bsonValue.append(STORE_NAME_CUSTOM, new BsonString(_custom));
+            _bsonValue.put(STORE_NAME_CUSTOM, new BsonString(_custom));
         }
         var _features = getFeatures();
         if (_features != null) {
-            _bsonValue.append(STORE_NAME_FEATURES, BsonValueUtil.toBsonArray(_features, BsonString::new));
+            _bsonValue.put(STORE_NAME_FEATURES, BsonValueUtil.toBsonArray(_features, BsonString::new));
         }
-        _bsonValue.append(STORE_NAME_ATTRIBUTES, getAttributes().toBsonValue());
+        _bsonValue.put(STORE_NAME_ATTRIBUTES, getAttributes().toBsonValue());
         return _bsonValue;
     }
 
@@ -247,8 +242,8 @@ public final class Preferences extends AbstractObjectModel<Preferences> {
             return true;
         }
         var changedFields = this.changedFields;
-        if (!changedFields.isEmpty()) {
-            return true;
+        if (changedFields.isEmpty()) {
+            return false;
         }
         if (changedFields.get(FIELD_INDEX_CUSTOM) && getCustom() != null) {
             return true;

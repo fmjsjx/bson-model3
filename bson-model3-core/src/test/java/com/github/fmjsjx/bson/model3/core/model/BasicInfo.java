@@ -1,24 +1,18 @@
 package com.github.fmjsjx.bson.model3.core.model;
 
 import com.alibaba.fastjson2.annotation.JSONType;
-import com.github.fmjsjx.bson.model3.core.AbstractObjectModel;
-import com.github.fmjsjx.bson.model3.core.BsonModelConstants;
-import com.github.fmjsjx.bson.model3.core.util.BsonUtil;
-import com.github.fmjsjx.bson.model3.core.util.BsonValueUtil;
+import com.github.fmjsjx.bson.model3.core.*;
+import com.github.fmjsjx.bson.model3.core.util.*;
 import com.github.fmjsjx.libcommon.util.DateTimeUtil;
 import com.mongodb.client.model.Updates;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @NullMarked
 public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
@@ -41,22 +35,18 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
 
     @JSONType(alphabetic = false)
     public static final class BasicInfoStoreData {
-
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_NAME)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_NAME)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_NAME)
-        private String name = "";
-
+        private String name;
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_AVATAR)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_AVATAR)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_AVATAR)
         private @Nullable String avatar;
-
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_BIRTHDAY)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_BIRTHDAY)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_BIRTHDAY)
         private @Nullable Integer birthday;
-
         @com.alibaba.fastjson2.annotation.JSONField(name = STORE_NAME_CREATED_TIME)
         @com.fasterxml.jackson.annotation.JsonProperty(STORE_NAME_CREATED_TIME)
         @com.jsoniter.annotation.JsonProperty(STORE_NAME_CREATED_TIME)
@@ -93,7 +83,6 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
         public void setCreatedTime(long createdTime) {
             this.createdTime = createdTime;
         }
-
     }
 
     private String name = "";
@@ -233,16 +222,16 @@ public final class BasicInfo extends AbstractObjectModel<BasicInfo> {
     @Override
     public BsonDocument toBsonValue() {
         var _bsonValue = new BsonDocument();
-        _bsonValue.append(STORE_NAME_NAME, new BsonString(getName()));
+        _bsonValue.put(STORE_NAME_NAME, new BsonString(getName()));
         var _avatar = getAvatar();
         if (_avatar != null) {
-            _bsonValue.append(STORE_NAME_AVATAR, new BsonString(_avatar));
+            _bsonValue.put(STORE_NAME_AVATAR, new BsonString(_avatar));
         }
         var _birthday = getBirthday();
         if (_birthday != null) {
-            _bsonValue.append(STORE_NAME_BIRTHDAY, BsonValueUtil.toBsonInt32(_birthday));
+            _bsonValue.put(STORE_NAME_BIRTHDAY, BsonValueUtil.toBsonInt32(_birthday));
         }
-        _bsonValue.append(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(getCreatedTime()));
+        _bsonValue.put(STORE_NAME_CREATED_TIME, BsonValueUtil.toBsonDateTime(getCreatedTime()));
         return _bsonValue;
     }
 
