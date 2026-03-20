@@ -34,7 +34,7 @@ public abstract class AbstractRootModel<Self extends AbstractRootModel<Self>>
      */
     @SuppressWarnings("unchecked")
     @Override
-    public Self parent(BsonModel<?, ?> parent) {
+    public final Self parent(BsonModel<?, ?> parent) {
         return (Self) this;
     }
 
@@ -43,30 +43,54 @@ public abstract class AbstractRootModel<Self extends AbstractRootModel<Self>>
         return DotNotationPaths.root();
     }
 
+    /**
+     * Always return {@code false} because root model can't be full
+     * update.
+     *
+     * @return {@code false}
+     */
     @Override
-    public List<Bson> toUpdates() {
+    public final boolean isFullUpdate() {
+        return false;
+    }
+
+    /**
+     * Always do nothing because root model can't be full update.
+     *
+     * @param fullUpdate {@code true} if this model is in full update
+     *                   mode, {@code false} otherwise
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public final Self fullUpdate(boolean fullUpdate) {
+        return (Self) this;
+    }
+
+    @Override
+    public final List<Bson> toUpdates() {
         var updates = new ArrayList<Bson>();
         appendUpdates(updates);
         return updates;
     }
 
     @Override
-    public String jsonMarshal(JsonLibrary<?> jsonLibrary) {
+    public final String jsonMarshal(JsonLibrary<?> jsonLibrary) {
         return jsonLibrary.dumpsToString(toStoreData());
     }
 
     @Override
-    public byte[] jsonMarshalToBytes(JsonLibrary<?> jsonLibrary) {
+    public final byte[] jsonMarshalToBytes(JsonLibrary<?> jsonLibrary) {
         return jsonLibrary.dumpsToBytes(toStoreData());
     }
 
     @Override
-    public Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, String json) {
+    public final Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, String json) {
         return loadStoreData(jsonLibrary.loads(json, storeDataType()));
     }
 
     @Override
-    public Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, byte[] json) {
+    public final Self jsonUnmarshal(JsonLibrary<?> jsonLibrary, byte[] json) {
         return loadStoreData(jsonLibrary.loads(json, storeDataType()));
     }
 
