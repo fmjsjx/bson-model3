@@ -5,17 +5,19 @@ plugins {
 
 dependencies {
 
+    api("org.jspecify:jspecify")
+
     implementation("org.slf4j:slf4j-api")
 
     api("com.github.fmjsjx:libcommon-collection")
     api("com.github.fmjsjx:libcommon-util")
-    api("com.github.fmjsjx:libcommon-json-jackson2")
-    api("com.github.fmjsjx:libcommon-json-jackson3")
-    api("com.github.fmjsjx:libcommon-json-fastjson2")
-    api("com.github.fmjsjx:libcommon-json-jsoniter")
+    api("com.github.fmjsjx:libcommon-json")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-fastjson2")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-jackson3")
+    compileOnlyApi("com.github.fmjsjx:libcommon-json-jsoniter")
 
     api("org.mongodb:bson")
-    compileOnly("org.mongodb:mongodb-driver-core")
+    api("org.mongodb:mongodb-driver-core")
     compileOnly("org.mongodb:mongodb-driver-sync")
     compileOnly("org.mongodb:mongodb-driver-reactivestreams")
 
@@ -23,6 +25,9 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl")
+    testImplementation("com.github.fmjsjx:libcommon-json-fastjson2")
+    testImplementation("com.github.fmjsjx:libcommon-json-jsoniter")
+    testImplementation("com.github.fmjsjx:libcommon-json-jackson3")
 
 }
 
@@ -31,6 +36,7 @@ description = "bson-model3/Core"
 tasks.test {
     // Use junit platform for unit tests.
     useJUnitPlatform()
+    jvmArgs = jvmArgs + listOf("-server")
 }
 
 publishing {

@@ -8,6 +8,7 @@ description = "bsom-model/BOM"
 dependencies {
     constraints {
         api(project(":bson-model3-core"))
+        api(project(":bson-model3-generator"))
     }
 }
 

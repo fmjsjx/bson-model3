@@ -1,0 +1,5543 @@
+#!/usr/bin/env ruby
+
+
+class ConstConf
+
+  class << self
+    def from(config)
+      name = config['name']
+      type = config['type']
+      value = config['value']
+      new(name, type, value)
+    end
+  end
+
+  attr_reader :name, :type, :value
+
+  def initialize(name, type, value)
+    if name.nil?
+      raise ArgumentError, 'name is required on const'
+    else
+      @name = name.to_s
+    end
+    if type.nil?
+      raise ArgumentError, 'type is required on const'
+    else
+      @type = type.to_s
+    end
+    if value.nil?
+      raise ArgumentError, 'value is required on const'
+    else
+      @value = value.to_s
+    end
+  end
+
+end
+
+class FieldConf
+
+  class << self
+    def from(config, index)
+      name = config['name']
+      type = config['type']
+      default = config['default']
+      model = config['model']
+      key = config['key']
+      value = config['value']
+      sources = config['sources']
+      annotations = config['annotations']
+      imports = config['imports']
+      block = config['block']
+      expression = config['expression']
+      new(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
+    end
+  end
+
+  attr_reader :index,
+              :name,
+              :store_name,
+              :display_name,
+              :type,
+              :default,
+              :model,
+              :key,
+              :value,
+              :sources,
+              :imports,
+              :annotations,
+              :block,
+              :expression
+
+  def initialize(index, name, type, default, model, key, value, sources, imports, annotations, block, expression)
+    if index.nil?
+      raise ArgumentError, 'index is required on field'
+    end
+    @index = index
+    @name, @store_name, @display_name = parse_names(name)
+    @type, @required, @virtual, @hidden, @readonly, @transient, @increment = parse_type_and_modifiers(type)
+    @default = default.to_s unless default.nil?
+    @model = model.to_s unless model.nil?
+    @key = key.to_s unless key.nil?
+    @value = value.to_s unless value.nil?
+    @sources = parse_sources(sources)
+    @imports = parse_imports(imports)
+    @annotations = parse_annotations(annotations)    
+    @block = block.to_s unless block.nil?
+    @expression = expression.to_s unless expression.nil?
+  end
+
+  def required?
+    @required
+  end
+
+  def virtual?
+    @virtual
+  end
+
+  def hidden?
+    @hidden
+  end
+
+  def readonly?
+    @readonly
+  end
+
+  def transient?
+    @transient
+  end
+
+  def increment?
+    @increment
+  end
+
+  # Returns whether the field should be stored in MongoDB
+  #
+  # @return [Boolean] true if the field should be stored in MongoDB,
+  #         false otherwise
+  def store_field?
+    not virtual? and not readonly? and not transient?
+  end
+
+  # Returns whether the field should be displayed
+  #
+  # @return [Boolean] true if the field should be displayed,
+  #         false otherwise
+  def display_field?
+    not hidden?
+  end
+
+  # Returns the field name in screaming snake case
+  #
+  # @return [String] the field name in screaming snake case
+  def screaming_snake_case_name
+    @name.gsub(/[A-Z]/) { |match| "_#{match}" }.upcase
+  end
+
+  # Returns the name of the store name const of the field
+  #
+  # @return [String] the name of the store name const of the field
+  def store_name_const_name
+    "STORE_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the display name const of the field
+  #
+  # @return [String] the name of the display name const of the field
+  def display_name_const_name
+    "DISPLAY_NAME_#{screaming_snake_case_name}"
+  end
+
+  # Returns the name of the field index const of the field
+  #
+  # @return [String] the name of the field index const of the field
+  def field_index_const_name
+    "FIELD_INDEX_#{screaming_snake_case_name}"
+  end
+
+  # Returns the getter method name of the field
+  #
+  # @return [String] the getter method name of the field
+  def getter_name
+    if @type == 'boolean' and required?
+      "is#{camel_case_name}"
+    else
+      "get#{camel_case_name}"
+    end
+  end
+
+  # Returns the setter method name of the field
+  #
+  # @return [String] the setter method name of the field
+  def setter_name
+    "set#{camel_case_name}"
+  end
+
+  # Returns the field name in camel case
+  #
+  # @return [String] the field name in camel case
+  def camel_case_name
+    @name[0].upcase << @name[1..]
+  end
+
+  def has_modifier?(modifier)
+    @modifiers.include?(modifier)
+  end
+
+  def has_children?
+    @type == 'object' or @type == 'map'
+  end
+
+  private
+  def parse_names(name_value)
+    if name_value.nil?
+      raise ArgumentError, 'name is required on field'
+    end
+    name, store_name, display_name = name_value.to_s.split(/\s+/)
+    if store_name.nil?
+      store_name = name
+    end
+    if display_name.nil?
+      display_name = name
+    end
+    [name, store_name, display_name]
+  end
+
+  def parse_type_and_modifiers(type_and_modifiers)
+    if type_and_modifiers.nil?
+      raise ArgumentError, 'type is required on field'
+    end
+    modifiers = type_and_modifiers.to_s.split(/\s+/)
+    type = modifiers[0]
+    # modifiers default values
+    required = false
+    virtual = false
+    hidden = false
+    readonly = false
+    transient = false
+    increment = false
+    modifiers[1..].each do |modifier|
+      case modifier
+      when 'required'
+        required = true
+      when 'virtual'
+        virtual = true
+      when 'hidden'
+        hidden = true
+      when 'readonly'
+        readonly = true
+      when 'transient'
+        transient = true
+      when 'increment', 'increment-1'
+        increment = true
+      end
+    end
+    @modifiers = modifiers[1..]
+    [type, required, virtual, hidden, readonly, transient, increment]
+  end
+
+  def parse_sources(sources)
+    parse_string_array(sources, 'sources')
+  end
+
+  def parse_string_array(array, name)
+    if array.nil?
+      []
+    elsif array.is_a?(String)
+      [array]
+    elsif array.is_a?(Array)
+      array.map { |item| item.to_s }
+    else
+      raise ArgumentError, "#{name} must be an array on field"
+    end
+  end
+
+  def parse_imports(imports)
+    parse_string_array(imports, 'imports')
+  end
+
+  def parse_annotations(annotations)
+    parse_string_array(annotations, 'annotations')
+  end
+
+end
+
+
+class ModelConf
+
+  class << self
+    def from(config, package)
+      name = config['name']
+      type = config['type']
+      if config.key?('consts')
+        consts = config['consts']
+        unless consts.is_a?(Array)
+          raise ArgumentError, 'consts must be an array on model'
+        end
+        consts = consts.map { |const| ConstConf.from(const) }
+      end
+      if config.key?('fields')
+        fields = config['fields']
+        unless fields.is_a?(Array)
+          raise ArgumentError, 'fields must be an array on model'
+        end
+        fields = fields.map.with_index { |field, index| FieldConf.from(field, index) }
+      end
+      new(package, name, type, consts, fields)
+    end
+  end
+
+  attr_reader :package, :name, :type, :consts, :fields
+
+  def initialize(package, name, type, consts, fields)
+    if package.nil?
+      raise ArgumentError, 'package is required on model'
+    else
+      @package = package.to_s
+    end
+    if name.nil?
+      raise ArgumentError, 'name is required on model'
+    else
+      @name = name.to_s
+    end
+    if type.nil?
+      raise ArgumentError, 'type is required on model'
+    else
+      @type = type.to_s
+    end
+    if consts.nil?
+      @consts = []
+    else
+      unless consts.is_a?(Array)
+        raise ArgumentError, 'consts must be an array on model'
+      end
+      @consts = consts
+    end
+    if fields.nil?
+      @fields = []
+    else
+      unless fields.is_a?(Array)
+        raise ArgumentError, 'fields must be an array on model'
+      end
+      @fields = fields
+    end
+  end
+
+end
+
+
+class Configurations
+
+  class << self
+    def from(config)
+      if config.key?('java-package')
+        package = config['java-package']
+      else
+        package = config['package']
+      end
+      if config.key?('json-libs')
+        json_libs = config['json-libs']
+        unless json_libs.is_a?(Array)
+          raise ArgumentError, 'json-libs must be an array'
+        end
+        if json_libs.empty?
+          json_libs = ['Jackson']
+        end
+      else
+        json_libs = ['Jackson']
+      end
+      if config.key?('models')
+        models = config['models']
+        unless models.is_a?(Array)
+          raise ArgumentError, 'models must be an array'
+        end
+        models = models.map { |model| ModelConf.from(model, package) }
+      else
+        models = []
+      end
+      new(package, json_libs, models)
+    end
+  end
+
+  attr_reader :package, :json_libs, :models
+
+  def initialize(package, json_libs, models)
+    if package.nil?
+      raise ArgumentError, 'package is required'
+    else
+      package = package.to_s
+    end
+    @package = package
+    if json_libs.nil?
+      raise ArgumentError, 'json-libs is required'
+    else
+      unless json_libs.is_a?(Array)
+        raise ArgumentError, 'json-libs must be an array'
+      end
+      @json_libs = json_libs
+    end
+    if models.nil?
+      raise ArgumentError, 'models is required'
+    else
+      unless models.is_a?(Array)
+        raise ArgumentError, 'models must be an array'
+      end
+      @models = models
+    end
+  end
+
+end
+
+class ImportsGenerator
+
+  attr_reader :config, :model_conf, :imports
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @imports = []
+  end
+
+  def generate
+    if @imports.empty?
+      @imports = init_imports
+    end
+    code = ''
+    @imports.each do |import|
+      if import.empty?
+        code << "\n"
+      else
+        code << "import #{import};\n"
+      end
+    end
+    code
+  end
+
+  private
+  def init_imports
+    imports_javax = []
+    imports_java = ['java.util.*']
+    imports_other = ['com.alibaba.fastjson2.annotation.JSONType',
+                     'com.github.fmjsjx.bson.model3.core.*',
+                     'com.github.fmjsjx.bson.model3.core.util.*',
+                     'org.bson.*',
+                     'org.bson.conversions.Bson',
+                     'org.jspecify.annotations.NullMarked',
+                     'org.jspecify.annotations.Nullable']
+    consts = @model_conf.consts
+    fields = @model_conf.fields
+    unless fields.filter { |field| field.store_field? }.empty?
+      imports_other << 'com.mongodb.client.model.Updates'
+    end
+    if consts.any? { |const| const.type == 'datetime' }
+      imports_java << 'java.time.LocalDateTime'
+    end
+    if consts.any? { |const| const.type == 'date' }
+      imports_java << 'java.time.LocalDate'
+    end
+    if consts.any? { |const| const.type == 'time' }
+      imports_java << 'java.time.LocalTime'
+    end
+    if fields.any? { |field| field.type == 'datetime' or (field.type == 'std-list' and field.value == 'datetime') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalDateTime'
+    end
+    if fields.any? { |field| field.type == 'date' or (field.type == 'std-list' and field.value == 'date') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalDate'
+    end
+    if fields.any? { |field| field.type == 'time' or (field.type == 'std-list' and field.value == 'time') }
+      imports_other << 'com.github.fmjsjx.libcommon.util.DateTimeUtil'
+      imports_java << 'java.time.LocalTime'
+    end
+    if fields.any? { |field| field.type == 'decimal' or (field.type == 'std-list' and field.value == 'decimal') or (field.type == 'map' and field.value == 'decimal') }
+      imports_java << 'java.math.BigDecimal'
+    end
+    if fields.any? { |field| field.type == 'object-id' }
+      imports_other << 'org.bson.types.ObjectId'
+    end
+    fields.filter { |field| field.virtual? }.each do |field|
+      field.imports.each do |import|
+        if import.start_with?('javax.')
+          imports_javax << import
+        elsif import.start_with?('java.')
+          unless /^java\.util\.[^\.]+$/.match?(import)
+            imports_java << import
+          end
+        else
+          patterns = [/^com\.github\.fmjsjx\.bson\.model3\.core\.[^\.]+$/,
+                      /^com\.github\.fmjsjx\.bson\.model3\.core\.util\.[^\.]+$/,
+                      /^org\.bson\.[^\.]+$/]
+          if patterns.none? { |pattern| pattern.match?(import) }
+            imports_other << import
+          end
+        end
+      end
+    end
+    imports = imports_other.uniq.sort
+    imports << ''
+    imports += imports_javax.uniq.sort
+    imports += imports_java.uniq.sort
+  end
+
+end
+
+class ConstGenerator
+
+  attr_reader :model_conf, :const_conf
+
+  def initialize(model_conf, const_conf)
+    @model_conf = model_conf
+    @const_conf = const_conf
+  end
+
+  def generate
+    name = @const_conf.name
+    type, type_1 = @const_conf.type.split(/\s+/)
+    value = @const_conf.value
+    case type
+    when 'int', 'long', 'double', 'boolean'
+      "    public static final #{type} #{name} = #{value};\n"
+    when 'decimal'
+      "    public static final BigDecimal #{name} = #{value};\n"
+    when 'string'
+      "    public static final String #{name} = \"#{value}\";\n"
+    when 'date'
+      "    public static final LocalDate #{name} = #{value};\n"
+    when 'time'
+      "    public static final LocalTime #{name} = #{value};\n"
+    when 'datetime'
+      "    public static final LocalDateTime #{name} = #{value};\n"
+    when 'list'
+      if type_1.nil?
+        raise ArgumentError, "Missing value type for const type list"
+      end
+      case type_1
+      when 'int'
+        "    public static final List<Integer> #{name} = #{value};\n"
+      when 'long'
+        "    public static final List<Long> #{name} = #{value};\n"
+      when 'double'
+        "    public static final List<Double> #{name} = #{value};\n"
+      when 'string'
+        "    public static final List<String> #{name} = #{value};\n"
+      else
+        raise ArgumentError, "Unsupported value type #{type_1} for const type list"
+      end
+    when 'set'
+      if type_1.nil?
+        raise ArgumentError, "Missing value type for const type set"
+      end
+      case type_1
+      when 'int'
+        "    public static final Set<Integer> #{name} = #{value};\n"
+      when 'long'
+        "    public static final Set<Long> #{name} = #{value};\n"
+      when 'double'
+        "    public static final Set<Double> #{name} = #{value};\n"
+      when 'string'
+        "    public static final Set<String> #{name} = #{value};\n"
+      else
+        raise ArgumentError, "Unsupported value type #{type_1} for const type set"
+      end
+    else
+      raise ArgumentError, "Unsupported const type #{type}"
+    end
+  end
+
+end
+
+
+class ConstsGenerator
+  attr_reader :config, :model_conf
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+  end
+
+  def generate
+    code = ''
+    code << generate_configured_consts
+    code << generate_store_names
+    code << generate_display_names
+    code << generate_field_indices
+  end
+
+  private
+  def generate_configured_consts
+    code = ''
+    consts = @model_conf.consts
+    unless consts.empty?
+      code << "\n"
+      consts.each do |const|
+        code << ConstGenerator.new(@model_conf, const).generate
+      end
+    end
+    code
+  end
+
+  def generate_store_names
+    code = ''
+    fields = @model_conf.fields.filter { |field| field.store_field? or field.readonly? }
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final String #{field.store_name_const_name} = \"#{field.store_name}\";\n"
+      end
+    end
+    code
+  end
+
+  def generate_display_names
+    code = ''
+    fields = @model_conf.fields.filter { |field| field.display_field? }
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final String #{field.display_name_const_name} = \"#{field.display_name}\";\n"
+      end
+    end
+    code
+  end
+
+  def generate_field_indices
+    code = ''
+    fields = @model_conf.fields
+    unless fields.empty?
+      code << "\n"
+      fields.each do |field|
+        code << "    public static final int #{field.field_index_const_name} = #{field.index};\n"
+      end
+    end
+    code
+  end
+
+end
+
+module StoreData
+  
+  class PropertyGenerator
+    
+    class << self
+      def from(config, model_conf, field_conf)
+        type = field_conf.type
+        case type
+        when 'int', 'date', 'time'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'int', 'Integer')
+        when 'long', 'datetime'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'long', 'Long')
+        when 'double'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'double', 'Double')
+        when 'boolean'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'boolean', 'Boolean')
+        when 'string', 'object-id'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'String')
+        when 'decimal'
+          SimplePropertyGenerator.new(config, model_conf, field_conf, 'BigDecimal')
+        when 'object'
+          ObjectPropertyGenerator.new(config, model_conf, field_conf)
+        when 'map'
+          MapPropertyGenerator.new(config, model_conf, field_conf)
+        when 'std-list'
+          StdListPropertyGenerator.new(config, model_conf, field_conf)
+        else
+          raise ArgumentError, "unsupported field type #{type} on store data"
+        end
+      end
+    end
+    
+    attr_reader :model_conf, :field_conf
+    
+    def initialize(config, model_conf, field_conf)
+      @config = config
+      @model_conf = model_conf
+      @field_conf = field_conf
+    end
+    
+    def required?
+      @field_conf.required?
+    end
+
+    def generate_field_json_annotations_code
+      code = ''
+      json_libs = @config.json_libs
+      if json_libs.include?('Fastjson2')
+        code << "        @com.alibaba.fastjson2.annotation.JSONField(name = #{field_conf.store_name_const_name})\n"
+      end
+      if (json_libs & %w[Jackson Jackson2 Jackson3]).any?
+        code << "        @com.fasterxml.jackson.annotation.JsonProperty(#{field_conf.store_name_const_name})\n"
+      end
+      if json_libs.include?('Jsoniter')
+        if @field_conf.type == 'map'
+          code << "        @com.jsoniter.annotation.JsonProperty(value = #{field_conf.store_name_const_name}, implementation = LinkedHashMap.class)\n"
+        else
+          code << "        @com.jsoniter.annotation.JsonProperty(#{field_conf.store_name_const_name})\n"
+        end
+      end
+      code
+    end
+    
+    def generate_field_declaration_code
+      raise NotImplementedError, "generate_field_declaration_code is not implemented"
+    end
+    
+    def generate_getter_code
+      raise NotImplementedError, "generate_getter_code is not implemented"
+    end
+    
+    def generate_setter_code
+      raise NotImplementedError, "generate_setter_code is not implemented"
+    end
+    
+  end
+  
+end
+
+
+
+module StoreData
+
+  class SimplePropertyGenerator < PropertyGenerator
+
+    attr_reader :primitive_type, :boxed_type
+
+    def initialize(config, model_conf, field_conf, primitive_type, boxed_type=nil)
+      super(config, model_conf, field_conf)
+      @primitive_type = primitive_type
+      @boxed_type = boxed_type || primitive_type
+    end
+
+    def generate_field_declaration_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private #{@primitive_type} #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable #{@boxed_type} #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public #{@primitive_type} #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable #{@boxed_type} #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(#{@primitive_type} #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable #{@boxed_type} #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+  end
+
+end
+
+
+
+module StoreData
+
+  class MapPropertyGenerator < PropertyGenerator
+
+    attr_reader :value_type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+      @value_type = parse_value_type
+    end
+
+    def generate_field_declaration_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private Map<String, #{value_type}> #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable Map<String, #{value_type}> #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public Map<String, #{value_type}> #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable Map<String, #{value_type}> #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(Map<String, #{value_type}> #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable Map<String, #{value_type}> #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    private
+    def parse_value_type
+      value = @field_conf.value
+      case value
+      when 'int'
+        'Integer'
+      when 'long', 'datetime'
+        'Long'
+      when 'double'
+        'Double'
+      when 'decimal'
+        'BigDecimal'
+      when 'string'
+        'String'
+      when 'object'
+        "#{@field_conf.model}.#{@field_conf.model}StoreData"
+      else
+        raise ArgumentError, "Unsupported value type: #{value}"
+      end
+    end
+  end
+
+end
+
+
+
+module StoreData
+
+  class StdListPropertyGenerator < PropertyGenerator
+
+    attr_reader :key_type, :value_type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+    end
+
+    def generate_field_declaration_code
+      code = generate_field_json_annotations_code
+      if required?
+        code << "        private List<@Nullable #{value_type}> #{@field_conf.name};\n"
+      else
+        code << "        private @Nullable List<@Nullable #{value_type}> #{@field_conf.name};\n"
+      end
+    end
+
+    def generate_getter_code
+      code = ''
+      if required?
+        code << "        public List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
+      else
+        code << "        public @Nullable List<@Nullable #{value_type}> #{@field_conf.getter_name}() {\n"
+      end
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      if required?
+        code << "        public void #{@field_conf.setter_name}(List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
+      else
+        code << "        public void #{@field_conf.setter_name}(@Nullable List<@Nullable #{value_type}> #{@field_conf.name}) {\n"
+      end
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def value_type
+      @value_type ||= parse_value_type
+    end
+
+    private
+    def parse_value_type
+      value = @field_conf.value
+      case value
+      when 'int', 'date', 'time'
+        'Integer'
+      when 'long', 'datetime'
+        'Long'
+      when 'double'
+        'Double'
+      when 'decimal'
+        'BigDecimal'
+      when 'string', 'object-id', 'uuid'
+        'String'
+      when 'object'
+        "#{@field_conf.model}.#{@field_conf.model}StoreData"
+      else
+        raise ArgumentError, "Unsupported value type: #{value}"
+      end
+    end
+
+  end
+
+end
+
+
+
+module StoreData
+
+  class ObjectPropertyGenerator < PropertyGenerator
+
+    attr_reader :type
+
+    def initialize(config, model_conf, field_conf)
+      super(config, model_conf, field_conf)
+      @type = parse_type(field_conf)
+    end
+
+    def generate_field_declaration_code
+      code = generate_field_json_annotations_code
+      code << "        private #{@type} #{@field_conf.name};\n"
+    end
+
+    def generate_getter_code
+      code = ''
+      code << "        public #{@type} #{@field_conf.getter_name}() {\n"
+      code << "            return #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    def generate_setter_code
+      code = ''
+      code << "        public void #{@field_conf.setter_name}(#{@type} #{@field_conf.name}) {\n"
+      code << "            this.#{@field_conf.name} = #{@field_conf.name};\n"
+      code << "        }\n"
+    end
+
+    private
+    def parse_type(field_conf)
+      if field_conf.required?
+        "#{field_conf.model}.#{field_conf.model}StoreData"
+      else
+        "#{field_conf.model}.@Nullable #{field_conf.model}StoreData"
+      end
+    end
+
+  end
+
+end
+
+
+
+
+module StoreData
+
+  class ClassGenerator
+
+    attr_reader :config, :model_conf
+
+    def initialize(config, model_conf)
+      @config = config
+      @model_conf = model_conf
+    end
+
+    def generate
+      code = "\n"
+      code << generate_class_declaration_code_prefix
+      fields = @model_conf.fields.filter { |field| field.store_field? }
+      property_generators = fields.map { |field| PropertyGenerator.from(@config, @model_conf, field) }
+      property_generators.each { |property_generator| code << property_generator.generate_field_declaration_code }
+      property_generators.each do |property_generator|
+        code << "\n"
+        code << property_generator.generate_getter_code
+        code << "\n"
+        code << property_generator.generate_setter_code
+      end
+      code << generate_class_declaration_code_suffix
+    end
+
+    private
+    def generate_class_declaration_code_prefix
+      code = "    @JSONType(alphabetic = false)\n"
+      code << "    public static final class #{@model_conf.name}StoreData {\n"
+    end
+
+    def generate_class_declaration_code_suffix
+      code = "    }\n"
+    end
+    
+  end
+
+end
+
+
+module StoreData
+
+  def self.generate_class_code(config, model_conf)
+    ClassGenerator.new(config, model_conf).generate
+  end
+
+end
+
+class PropertyGenerator
+
+  class << self
+    def from(config, model_conf, field_conf)
+      type = field_conf.type
+      case type
+      when 'int'
+        IntPropertyGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        LongPropertyGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        DoublePropertyGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        DecimalPropertyGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        BooleanPropertyGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        StringPropertyGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        DatePropertyGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        TimePropertyGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        DateTimePropertyGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ObjectIdPropertyGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        UuidPropertyGenerator.new(config, model_conf, field_conf)
+      when 'object'
+        ObjectPropertyGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        StdListPropertyGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        MapPropertyGenerator.new(config, model_conf, field_conf)
+      else
+        raise ArgumentError, "unsupported field type #{type}"
+      end
+    end
+  end
+
+  attr_reader :config, :model_conf, :field_conf
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+  end
+
+  def name
+    @field_conf.name
+  end
+
+  def required?
+    @field_conf.required?
+  end
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def store_field?
+    @field_conf.store_field?
+  end
+
+  def virtual?
+    @field_conf.virtual?
+  end
+
+  def no_setter?
+    virtual?
+  end
+
+  def virtual_code
+    if virtual?
+      if not @field_conf.block.nil?
+        @field_conf.block.lines.map { |line| "        #{line.chomp}" }.join("\n")
+      elsif not @field_conf.expression.nil?
+        "        return #{@field_conf.expression};"
+      else
+        raise ArgumentError, "At least one of block or expression must be present"
+      end
+    end
+  end
+
+  def field_changed_code
+    associated_fields = @model_conf.fields.filter do |field|
+      field.name == @field_conf.name or (field.virtual? and field.sources.include?(@field_conf.name))
+    end.map do |field|
+      field.field_index_const_name
+    end
+    if associated_fields.size == 1
+      "triggerChange(#{associated_fields[0]});"
+    else
+      "fieldsChanged(#{associated_fields.join(', ')});"
+    end
+  end
+
+  def generate_field_declaration_code
+    raise UnsupportedOperationException, "generate_field_declaration_code is not supported on #{self.class}"
+  end
+
+  def generate_getter_code
+    raise UnsupportedOperationException, "generate_getter_code is not supported on #{self.class}"
+  end
+
+  def generate_setter_code
+    raise UnsupportedOperationException, "generate_setter_code is not supported on #{self.class}"
+  end
+
+  def generate_increment_code
+    raise UnsupportedOperationException, "generate_increment_code is not supported on #{self.class}"
+  end
+
+end
+
+class DefaultValue
+
+  class << self
+
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        IntDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'long'
+        LongDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'double'
+        DoubleDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'decimal'
+        DecimalDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'boolean'
+        BooleanDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'string'
+        StringDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'date'
+        DateDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'time'
+        TimeDefaultValue.generate_code(config, model_conf, field_conf)
+      when 'datetime'
+        DateTimeDefaultValue.generate_code(config, model_conf, field_conf)
+      else
+        field_conf.default
+      end
+    end
+
+  end
+
+
+
+end
+
+
+
+class LongDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'MIN'
+        'Long.MIN_VALUE'
+      when 'MAX'
+        'Long.MAX_VALUE'
+      else
+        field_conf.default
+      end
+    end
+  end
+
+end
+
+
+
+class DoubleDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'NAN'
+        'Double.NaN'
+      when '+INF'
+        'Double.POSITIVE_INFINITY'
+      when '-INF'
+        'Double.NEGATIVE_INFINITY'
+      when 'MIN'
+        'Double.MIN_VALUE'
+      when 'MAX'
+        'Double.MAX_VALUE'
+      else
+        field_conf.default
+      end
+    end
+  end
+
+end
+
+
+
+class DecimalDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'ZERO'
+        'BigDecimal.ZERO'
+      when 'ONE'
+        'BigDecimal.ONE'
+      when 'TEN'
+        'BigDecimal.TEN'
+      else
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'decimal' and const_conf.name == value }
+          value
+        else
+          "new BigDecimal(\"#{value}\")"
+        end
+      end
+    end
+  end
+
+end
+
+
+
+class BooleanDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.downcase
+      when 'true', '1', 'yes', 'y', 'on'
+        'true'
+      else
+        'false'
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class StringDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      field_conf.default.to_json
+    end
+  end
+
+end
+
+require 'json'
+
+
+class DateDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalDate.MIN'
+      when 'MAX'
+        'LocalDate.MAX'
+      when 'EPOCH'
+        'LocalDate.EPOCH'
+      when 'NOW'
+        'LocalDate.now()'
+      else
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'date' and const_conf.name == value }
+          value
+        else
+          "LocalDate.parse(#{value.to_json})"
+        end
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class TimeDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalTime.MIN'
+      when 'MAX'
+        'LocalTime.MAX'
+      when 'MIDNIGHT'
+        'LocalTime.MIDNIGHT'
+      when 'NOON'
+        'LocalTime.NOON'
+      when 'NOW'
+        'LocalTime.now()'
+      else
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'time' and const_conf.name == value }
+          value
+        else
+          "LocalTime.parse(#{value.to_json})"
+        end
+      end
+    end
+  end
+
+end
+
+require 'json'
+
+
+class DateTimeDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      value = field_conf.default
+      case value.upcase
+      when 'MIN'
+        'LocalDateTime.MIN'
+      when 'MAX'
+        'LocalDateTime.MAX'
+      when 'EPOCH'
+        'BsonModelConstants.EPOCH_DATE_TIME'
+      when 'NOW'
+        'LocalDateTime.now()'
+      else
+        if model_conf.consts.any? { |const_conf| const_conf.type == 'datetime' and const_conf.name == value }
+          value
+        else
+          "LocalDateTime.parse(#{value.to_json})"
+        end
+      end
+    end
+  end
+
+end
+
+
+
+
+class IntDefaultValue < DefaultValue
+
+  class << self
+    def generate_code(config, model_conf, field_conf)
+      case field_conf.default.upcase
+      when 'MIN'
+        'Integer.MIN_VALUE'
+      when 'MAX'
+        'Integer.MAX_VALUE'
+      else
+        field_conf.default
+      end
+    end
+  end
+
+end
+
+
+
+class IntPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != '0'
+        "    private int #{name} = #{default_value_code};\n"
+      else
+        "    private int #{name};\n"
+      end
+    else
+      "    private @Nullable Integer #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public int #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable Integer #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(int #{name}) {\n"
+      if store_field?
+        code << "        if (#{name} != this.#{name}) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable Integer #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  def generate_increment_code
+    code = ''
+    if required?
+      code << "    public int increase#{field_conf.camel_case_name}() {\n"
+      code << "        #{field_changed_code}\n"
+      code << "        return ++#{name};\n"
+      code << "    }\n"
+    else
+      code << "    public @Nullable Integer increase#{field_conf.camel_case_name}() {\n"
+      code << "        if (#{name} != null) {\n"
+
+      code << "            #{field_changed_code}\n"
+      code << "            return ++#{name};\n"
+      code << "        }\n"
+      code << "        return null;\n"
+      code << "    }\n"
+    end
+  end
+
+
+  private
+  def default_value_code 
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LongPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != '0' and default_value_code != '0L'
+        "    private long #{name} = #{default_value_code};\n"
+      else
+        "    private long #{name};\n"
+      end
+    else
+      "    private @Nullable Long #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public long #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable Long #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(long #{name}) {\n"
+      if store_field?
+        code << "        if (#{name} != this.#{name}) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable Long #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  def generate_increment_code
+    code = ''
+    if required?
+      code << "    public long increase#{field_conf.camel_case_name}() {\n"
+      code << "        #{field_changed_code}\n"
+      code << "        return ++#{name};\n"
+      code << "    }\n"
+    else
+      code << "    public @Nullable Long increase#{field_conf.camel_case_name}() {\n"
+      code << "        if (#{name} != null) {\n"
+      code << "            #{field_changed_code}\n"
+      code << "            return ++#{name};\n"
+      code << "        }\n"
+      code << "        return null;\n"
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class DoublePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        if default_value_code == '0.0'
+          "    private double #{name};\n"
+        else
+          "    private double #{name} = #{default_value_code};\n"
+        end
+      else
+        "    private double #{name} = Double.NaN;\n"
+      end
+    else
+      "    private @Nullable Double #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public double #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable Double #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(double #{name}) {\n"
+      if store_field?
+        code << "        if (#{name} != this.#{name}) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable Double #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class DecimalPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private BigDecimal #{name} = #{default_value_code};\n"
+      else
+        "    private BigDecimal #{name} = BigDecimal.ZERO;\n"
+      end
+    else
+      "    private @Nullable BigDecimal #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public BigDecimal #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable BigDecimal #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(BigDecimal #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable BigDecimal #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class BooleanPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value? and default_value_code != 'false'
+        "    private boolean #{name} = #{default_value_code};\n"
+      else
+        "    private boolean #{name};\n"
+      end
+    else
+      "    private @Nullable Boolean #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public boolean #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable Boolean #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(boolean #{name}) {\n"
+      if store_field?
+        code << "        if (#{name} != this.#{name}) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable Boolean #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class StringPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private String #{name} = #{default_value_code};\n"
+      else
+        "    private String #{name} = \"\";\n"
+      end
+    else
+      "    private @Nullable String #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public String #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable String #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(String #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable String #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    StringDefaultValue.generate_code(config, model_conf, field_conf)
+  end
+
+end
+
+
+
+class DatePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalDate #{name} = #{default_value_code};\n"
+      else
+        "    private LocalDate #{name} = LocalDate.EPOCH;\n"
+      end
+    else
+      "    private @Nullable LocalDate #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public LocalDate #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable LocalDate #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(LocalDate #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalDate #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class TimePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalTime #{name} = #{default_value_code};\n"
+      else
+        "    private LocalTime #{name} = LocalTime.MIDNIGHT;\n"
+      end
+    else
+      "    private @Nullable LocalTime #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public LocalTime #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable LocalTime #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(LocalTime #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalTime #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class DateTimePropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      if has_default_value?
+        "    private LocalDateTime #{name} = #{default_value_code};\n"
+      else
+        "    private LocalDateTime #{name} = BsonModelConstants.EPOCH_DATE_TIME;\n"
+      end
+    else
+      "    private @Nullable LocalDateTime #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public LocalDateTime #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable LocalDateTime #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(LocalDateTime #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable LocalDateTime #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def default_value_code
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class ObjectIdPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      "    private ObjectId #{name};\n"
+    else
+      "    private @Nullable ObjectId #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public ObjectId #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable ObjectId #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(ObjectId #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable ObjectId #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+end
+
+
+
+class UuidPropertyGenerator < PropertyGenerator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+  end
+
+  def generate_field_declaration_code
+    if required?
+      "    private UUID #{name};\n"
+    else
+      "    private @Nullable UUID #{name};\n"
+    end
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public UUID #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable UUID #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(UUID #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable UUID #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+end
+
+
+
+class ObjectPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    code = ''
+    if store_field? and required?
+      code << "    private final #{field_conf.model} #{name} = new #{field_conf.model}()\n"
+      code << "            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name});\n"
+    else
+      code << "    private @Nullable #{field_conf.model} #{name};\n"
+    end
+  end
+
+  def no_setter?
+    field_conf.virtual? or (store_field? and required?)
+  end
+
+  def generate_getter_code
+    code = ''
+    if store_field? and required?
+      code << "    public #{field_conf.model} #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable #{field_conf.model} #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    code << "    public void #{field_conf.setter_name}(@Nullable #{field_conf.model} #{name}) {\n"
+    if store_field?
+      code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+      code << "            if (#{name} != null) {\n"
+      code << "                #{name}.ensureDetached();\n"
+      code << "                if (this.#{name} != null) {\n"
+      code << "                    this.#{name}.detach();\n"
+      code << "                }\n"
+      code << "                this.#{name} = #{name}.parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name}).fullUpdate();\n"
+      code << "            } else {\n"
+      code << "                this.#{name}.detach();\n"
+      code << "                this.#{name} = null;\n"
+      code << "            }\n"
+      code << "            #{field_changed_code}\n"
+      code << "        }\n"
+    else
+      code << "        this.#{name} = #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+end
+
+
+
+class StdListPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    if required?
+      "    private List<@Nullable #{value_type}> #{name} = List.of();\n"
+    else
+      "    private @Nullable List<@Nullable #{value_type}> #{name};\n"
+    end
+  end
+
+  def value_type
+    @value_type = parse_value_type
+  end
+
+  def generate_getter_code
+    code = ''
+    if required?
+      code << "    public List<@Nullable #{value_type}> #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable List<@Nullable #{value_type}> #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    if required?
+      code << "    public void #{field_conf.setter_name}(List<@Nullable #{value_type}> #{name}) {\n"
+      if store_field?
+        code << "        if (!#{name}.equals(this.#{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    else
+      code << "    public void #{field_conf.setter_name}(@Nullable List<@Nullable #{value_type}> #{name}) {\n"
+      if store_field?
+        code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+        code << "            this.#{name} = #{name};\n"
+        code << "            #{field_changed_code}\n"
+        code << "        }\n"
+      else
+        code << "        this.#{name} = #{name};\n"
+      end
+      code << "    }\n"
+    end
+  end
+
+  private
+  def parse_value_type
+    value = field_conf.value
+    case value
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'date'
+      'LocalDate'
+    when 'time'
+      'LocalTime'
+    when 'datetime'
+      'LocalDateTime'
+    when 'object-id'
+      'ObjectId'
+    when 'uuid'
+      'UUID'
+    when 'object'
+      "#{field_conf.model}"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+
+
+class MapPropertyGenerator < PropertyGenerator
+
+  def generate_field_declaration_code
+    code = ''
+    if store_field? and required?
+      code << "    private final #{generic_type} #{name} = #{map_init_code}\n"
+      code << "            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name});\n"
+    else
+      code << "    private @Nullable #{generic_type} #{name};\n"
+    end
+    code
+  end
+
+  def generic_type
+    @generic_type ||= parse_generic_type
+  end
+
+  def key_type
+    @key_type ||= parse_key_type
+  end
+
+  def value_type
+    @value_type ||= parse_value_type
+  end
+
+  def single_value_type
+    @single_value_type ||= parse_single_value_type
+  end
+
+  def no_setter?
+    field_conf.virtual? or (store_field? and required?)
+  end
+
+  def generate_getter_code
+    code = ''
+    if store_field? and required?
+      code << "    public #{generic_type} #{field_conf.getter_name}() {\n"
+    else
+      code << "    public @Nullable #{generic_type} #{field_conf.getter_name}() {\n"
+    end
+    if virtual?
+      code << "#{virtual_code}\n"
+    else
+      code << "        return #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_setter_code
+    code = ''
+    code << "    public void #{field_conf.setter_name}(@Nullable #{generic_type} #{name}) {\n"
+    if store_field?
+      code << "        if (!Objects.equals(this.#{name}, #{name})) {\n"
+      code << "            if (#{name} != null) {\n"
+      code << "                #{name}.ensureDetached();\n"
+      code << "                if (this.#{name} != null) {\n"
+      code << "                    this.#{name}.detach();\n"
+      code << "                }\n"
+      code << "                this.#{name} = #{name}.parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name}).fullUpdate();\n"
+      code << "            } else {\n"
+      code << "                this.#{name}.detach();\n"
+      code << "                this.#{name} = null;\n"
+      code << "            }\n"
+      code << "            #{field_changed_code}\n"
+      code << "        }\n"
+    else
+      code << "        this.#{name} = #{name};\n"
+    end
+    code << "    }\n"
+  end
+
+  def generate_init_code
+    map_init_code
+  end
+
+  private
+  def parse_generic_type
+    if field_conf.value == 'object'
+      "DefaultMapModel<#{key_type}, #{value_type}>"
+    else
+      "SingleValueMapModel<#{key_type}, #{value_type}>"
+    end
+  end
+
+  def parse_key_type
+    case field_conf.key
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'string'
+      'String'
+    else
+      raise ArgumentError, "Unsupported key type: #{field_conf.key}"
+    end
+  end
+
+  def parse_value_type
+    value = field_conf.value
+    case value
+    when 'int'
+      'Integer'
+    when 'long'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'datetime'
+      'LocalDateTime'
+    when 'object'
+      "#{field_conf.model}"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+  def map_init_code
+    if field_conf.value == 'object'
+      case key_type
+      when 'Integer'
+        "DefaultMapModel.integerKeysMap(#{value_type}::new)"
+      when 'Long'
+        "DefaultMapModel.longKeysMap(#{value_type}::new)"
+      when 'String'
+        "DefaultMapModel.stringKeysMap(#{value_type}::new)"
+      else
+        raise ArgumentError, "Unsupported key type: #{key_type}"
+      end
+    else
+      case key_type
+      when 'Integer'
+        "SingleValueMapModel.integerKeysMap(#{single_value_type})"
+      when 'Long'
+        "SingleValueMapModel.longKeysMap(#{single_value_type})"
+      when 'String'
+        "SingleValueMapModel.stringKeysMap(#{single_value_type})"
+      else
+        raise ArgumentError, "Unsupported key type: #{key_type}"
+      end
+    end
+  end
+
+  def parse_single_value_type
+    case value_type
+    when 'Integer'
+      'SingleValues.integer()'
+    when 'Long'
+      'SingleValues.longValue()'
+    when 'Double'
+      'SingleValues.doubleValue()'
+    when 'BigDecimal'
+      'SingleValues.bigDecimal()'
+    when 'String'
+      'SingleValues.string()'
+    when 'LocalDateTime'
+      'SingleValues.localDateTime()'
+    else
+      raise ArgumentError, "Unsupported single value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+
+class PropertiesGenerator
+
+  attr_reader :config, :model_conf, :property_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @property_generators = model_conf.fields.map do |field_conf|
+      PropertyGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate_properties_code
+    code = generate_fields_code
+    code << generate_getters_setters_code
+  end
+
+  private
+  def generate_fields_code
+    code = "\n"
+    @property_generators.each do |property_generator|
+      unless property_generator.field_conf.virtual?
+        code << property_generator.generate_field_declaration_code
+      end
+    end
+    code
+  end
+
+  def generate_getters_setters_code
+    code = ''
+    @property_generators.each do |property_generator|
+      # generate getter
+      code << "\n"
+      property_generator.field_conf.annotations.each do |annotation|
+        code << "    #{annotation}\n"
+      end
+      code << property_generator.generate_getter_code
+      unless property_generator.no_setter?
+        # generate setter
+        code << "\n"
+        code << property_generator.generate_setter_code
+      end
+      if property_generator.field_conf.increment?
+        code << "\n"
+        code << property_generator.generate_increment_code
+      end
+    end
+    code
+  end
+
+end
+
+class CleanFieldGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        CleanIntFieldGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        CleanLongFieldGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        CleanDoubleFieldGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        CleanDecimalFieldGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        CleanBooleanFieldGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        CleanStringFieldGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        CleanDateFieldGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        CleanTimeFieldGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        CleanDateTimeFieldGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        CleanObjectIdFieldGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        CleanUuidFieldGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        CleanStdListFieldGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+  end
+
+  def required?
+    @field_conf.required?
+  end
+
+  def store_field?
+    @field_conf.store_field?
+  end
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def generate
+    if store_field?
+      if required?
+        generate_required_clean_code
+      else
+        generate_optional_clean_code
+      end
+    else
+      "        #{@field_conf.name} = null;\n"
+    end
+  end
+
+  def generate_required_clean_code
+    "        #{@field_conf.getter_name}().clean();\n"
+  end
+
+  def generate_optional_clean_code
+    code = ''
+    code << "        var _#{@field_conf.name} = #{@field_conf.getter_name}();\n"
+    code << "        if (_#{@field_conf.name} != null) {\n"
+    code << "            _#{@field_conf.name}.clean().detach();\n"
+    code << "            #{@field_conf.name} = null;\n"
+    code << "        }\n"
+  end
+
+end
+
+
+
+
+class CleanIntFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = 0;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class CleanLongFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = 0L;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDoubleFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = Double.NaN;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDecimalFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = BigDecimal.ZERO;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class CleanBooleanFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = false;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanStringFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = \"\";\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    StringDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDateFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = LocalDate.EPOCH;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanTimeFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = LocalTime.MIDNIGHT;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanDateTimeFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    if has_default_value?
+      "        #{@field_conf.name} = #{default_value_code};\n"
+    else
+      "        #{@field_conf.name} = BsonModelConstants.EPOCH_DATE_TIME;\n"
+    end
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+  private
+  def default_value_code
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+
+class CleanObjectIdFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    code = ''
+    code << "        //noinspection DataFlowIssue\n"
+    code << "        #{@field_conf.name} = null;\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+class CleanUuidFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    code = ''
+    code << "        //noinspection DataFlowIssue\n"
+    code << "        #{@field_conf.name} = null;\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+class CleanStdListFieldGenerator < CleanFieldGenerator
+
+  def generate_required_clean_code
+    "        #{@field_conf.name} = List.of();\n"
+  end
+
+  def generate_optional_clean_code
+    "        #{@field_conf.name} = null;\n"
+  end
+
+end
+
+
+
+
+class CleanFieldsGenerator
+
+  attr_reader :config, :model_conf, :fields
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @clean_field_generators = model_conf.fields.filter do |field_conf|
+      not field_conf.virtual?
+    end.map do |field_conf|
+      CleanFieldGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    protected #{@model_conf.name} cleanFields() {\n"
+    @clean_field_generators.each do |clean_field_generator|
+      code << clean_field_generator.generate
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
+
+
+class AppendFieldUpdateGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        AppendIntFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        AppendLongFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        AppendDoubleFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        AppendDecimalFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        AppendBooleanFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        AppendStringFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        AppendDateFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        AppendTimeFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        AppendDatetimeFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        AppendObjectIdFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        AppendUuidFieldUpdateGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        AppendStdListFieldUpdateGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    code = ''
+    code << "        if (changedFields.get(#{@field_conf.field_index_const_name})) {\n"
+    if @field_conf.required?
+      code << generate_required_code
+    else
+      code << generate_optional_code
+    end
+    code << "        }\n"
+  end
+
+  def generate_required_code
+    "            #{@field_conf.getter_name}().appendUpdates(updates);\n"
+  end
+
+  def generate_optional_code
+    code = ''
+    code << "            var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "            if (#{@temp_field_name} == null) {\n"
+    code << "                updates.add(Updates.unset(path().path(#{@field_conf.store_name_const_name})));\n"
+    code << "            } else {\n"
+    code << generate_optional_append_update_code
+    code << "            }\n"
+  end
+
+  def generate_optional_append_update_code
+    "                #{@temp_field_name}.appendUpdates(updates);\n"
+  end
+
+end
+
+
+
+
+class AppendIntFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendLongFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt64(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonInt64(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDoubleFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonDouble(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonDouble(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDecimalFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDecimal128(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDecimal128(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendBooleanFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonBoolean.valueOf(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonBoolean.valueOf(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendStringFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonString(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonString(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDateFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendTimeFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonInt32(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendDatetimeFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDateTime(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonDateTime(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendObjectIdFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonObjectId(#{field_conf.getter_name}())));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), new BsonObjectId(#{temp_field_name})));\n"
+  end
+
+end
+
+
+
+class AppendUuidFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), #{to_bson_value_code("#{field_conf.getter_name}()")}));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), #{to_bson_value_code(temp_field_name)}));\n"
+  end
+
+  private
+  def to_bson_value_code(variable_name)
+    if field_conf.has_modifier?('legacy')
+      "new BsonBinary(#{variable_name}, UuidRepresentation.JAVA_LEGACY)"
+    else
+      "new BsonBinary(#{variable_name})"
+    end
+  end
+
+end
+
+
+
+class AppendStdListFieldUpdateGenerator < AppendFieldUpdateGenerator
+
+  def generate_required_code
+    "            updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonArray(#{field_conf.getter_name}(), #{map_to_bson_value_code})));\n"
+  end
+
+  def generate_optional_append_update_code
+    "                updates.add(Updates.set(path().path(#{field_conf.store_name_const_name}), BsonValueUtil.toBsonArray(#{temp_field_name}, #{map_to_bson_value_code})));\n"
+  end
+
+  private
+  def map_to_bson_value_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      "BsonInt32::new"
+    when 'long'
+      "BsonInt64::new"
+    when 'double'
+      "BsonDouble::new"
+    when 'decimal'
+      "BsonValueUtil::toBsonDecimal128"
+    when 'string'
+      "BsonString::new"
+    when 'date'
+      'BsonValueUtil::toBsonInt32'
+    when 'time'
+      'BsonValueUtil::toBsonInt32'
+    when 'datetime'
+      'BsonValueUtil::toBsonDateTime'
+    when 'object-id'
+      'BsonObjectId::new'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> new BsonBinary(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonBinary::new'
+      end
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+
+
+
+class AppendFieldUpdatesGenerator
+
+  attr_reader :config, :model_conf, :append_field_update_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @append_field_update_generators = model_conf.fields.filter do |field_conf|
+      field_conf.store_field?
+    end.map do |field_conf|
+      AppendFieldUpdateGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    protected void appendFieldUpdates(List<Bson> updates) {\n"
+    code << "        var changedFields = this.changedFields;\n"
+    code << "        if (changedFields.isEmpty()) {\n"
+    code << "            return;\n"
+    code << "        }\n"
+    @append_field_update_generators.each do |append_field_update_generator|
+      code << append_field_update_generator.generate
+    end
+    code << "    }\n"
+  end
+
+end
+
+class AppendUpdatedFieldDataGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        AppendUpdatedSimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        AppendUpdatedDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        AppendUpdatedTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        AppendUpdatedDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        AppendUpdatedObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        AppendUpdatedUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        AppendUpdatedStdListDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    code = ''
+    code << "        if (changedFields.get(#{@field_conf.field_index_const_name})) {\n"
+    code << generate_append_code
+    code << "        }\n"
+  end
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}().toUpdated();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name});\n"
+      code << "            }\n"
+    else
+      code << "            var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+      code << "            if (#{@temp_field_name} != null) {\n"
+      code << "                var #{@temp_field_name}Updated = #{@temp_field_name}.toUpdated();\n"
+      code << "                if (#{@temp_field_name}Updated != null) {\n"
+      code << "                    data.put(#{@field_conf.display_name_const_name}, #{@temp_field_name}Updated);\n"
+      code << "                }\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+
+class AppendUpdatedSimpleDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedDateDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedTimeDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.TIME_FORMATTER));\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.TIME_FORMATTER));\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedDateTimeDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.DATETIME_FORMATTER));\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.DATETIME_FORMATTER));\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedObjectIdDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toHexString());\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toHexString());\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedUuidDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+      code << "            }\n"
+    end
+  end
+
+end
+
+
+
+class AppendUpdatedStdListDataGenerator < AppendUpdatedFieldDataGenerator
+
+  def generate_append_code
+    code = ''
+    if field_conf.required?
+      code << "            data.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}()#{optional_value_map_code});\n"
+    else
+      code << "            var #{temp_field_name} = #{field_conf.getter_name}();\n"
+      code << "            if (#{temp_field_name} != null) {\n"
+      code << "                data.put(#{field_conf.display_name_const_name}, #{temp_field_name}#{optional_value_map_code});\n"
+      code << "            }\n"
+    end
+  end
+
+  private
+  def optional_value_map_code
+    case field_conf.value
+    when 'object'
+      ".stream().map(#{field_conf.model}::toDisplayData).toList()"
+    when 'date'
+      ".stream().map(LocalDate::toString).toList()"
+    when 'time'
+      ".stream().map(BsonModelConstants.TIME_FORMATTER::format).toList()"
+    when 'datetime'
+      ".stream().map(BsonModelConstants.DATETIME_FORMATTER::format).toList()"
+    when 'object-id'
+      ".stream().map(ObjectId::toHexString).toList()"
+    when 'uuid'
+      ".stream().map(UUID::toString).toList()"
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+
+class AppendUpdatedDataGenerator
+
+  attr_reader :config, :model_conf, :append_updated_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @append_updated_field_data_generators = model_conf.fields.filter do |field_conf|
+      not (field_conf.readonly? or field_conf.transient? or field_conf.hidden?)
+    end.map do |field_conf|
+      AppendUpdatedFieldDataGenerator.from(field_conf, config, model_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    protected void appendUpdatedData(Map<String, ? super Object> data) {\n"
+    code << "        var changedFields = this.changedFields;\n"
+    code << "        if (changedFields.isEmpty()) {\n"
+    code << "            return;\n"
+    code << "        }\n"
+    @append_updated_field_data_generators.each do |append_updated_field_data_generator|
+      code << append_updated_field_data_generator.generate
+    end
+    code << "    }\n"
+  end
+
+end
+
+class ToDisplayFieldDataGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        ToDisplaySimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToDisplayDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToDisplayTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToDisplayDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToDisplayObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToDisplayUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToDisplayStdListDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.transient? or @field_conf.readonly? or not @field_conf.required?
+      generate_optional_display_data_code
+    else
+      generate_required_display_data_code
+    end
+  end
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{@field_conf.display_name_const_name}, #{@field_conf.getter_name}().toDisplayData());\n"
+  end
+
+  def generate_optional_display_data_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_display_data_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{@field_conf.display_name_const_name}, #{@temp_field_name}.toDisplayData());\n"
+  end
+
+end
+
+
+
+
+class ToDisplaySimpleDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToDisplayDateDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+  end
+
+end
+
+
+
+class ToDisplayTimeDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.TIME_FORMATTER));\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.TIME_FORMATTER));\n"
+  end
+
+end
+
+
+
+class ToDisplayDateTimeDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().format(BsonModelConstants.DATETIME_FORMATTER));\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.format(BsonModelConstants.DATETIME_FORMATTER));\n"
+  end
+
+end
+
+
+
+class ToDisplayObjectIdDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toHexString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toHexString());\n"
+  end
+
+end
+
+
+
+class ToDisplayUuidDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{field_conf.getter_name}().toString());\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{temp_field_name}.toString());\n"
+  end
+
+end
+
+
+
+class ToDisplayStdListDataGenerator < ToDisplayFieldDataGenerator
+
+  def generate_required_display_data_code
+    "        _displayData.put(#{field_conf.display_name_const_name}, #{list_map_code("#{field_conf.getter_name}()")});\n"
+  end
+
+  def generate_optional_variable_display_data_code
+    "            _displayData.put(#{field_conf.display_name_const_name}, #{list_map_code(temp_field_name)});\n"
+  end
+
+  private
+  def list_map_code(variable_name)
+    case field_conf.value
+    when 'object'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name})"
+    when 'date'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, LocalDate::toString)"
+    when 'time'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, BsonModelConstants.TIME_FORMATTER::format)"
+    when 'datetime'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, BsonModelConstants.DATETIME_FORMATTER::format)"
+    when 'object-id'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, ObjectId::toHexString)"
+    when 'uuid'
+      "CommonsUtil.mapToDisplayDataList(#{variable_name}, UUID::toString)"
+    else
+      "new ArrayList<>(#{variable_name})"
+    end
+  end
+
+end
+
+
+
+
+class ToDisplayDataGenerator
+
+  attr_reader :config, :model_conf, :to_display_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @to_display_field_data_generators = model_conf.fields.filter do |field_conf|
+      not field_conf.hidden?
+    end.map do |field_conf|
+      ToDisplayFieldDataGenerator.from(field_conf, config, model_conf)
+    end
+  end
+
+  def generate
+    code =''
+    code << "    @Override\n"
+    code << "    public Map<String, ?> toDisplayData() {\n"
+    code << "        var _displayData = new LinkedHashMap<String, Object>();\n"
+    @to_display_field_data_generators.each do |to_display_field_data_generator|
+      code << to_display_field_data_generator.generate
+    end
+    code << "        return _displayData;\n"
+    code << "    }\n"
+  end
+
+end
+
+class ToBsonFieldValueGenerator
+
+  class << self
+
+    def from(field_conf, config, model_conf)
+      case field_conf.type
+      when 'int'
+        ToBsonIntValueGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        ToBsonLongValueGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        ToBsonDoubleValueGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        ToBsonDecimalValueGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        ToBsonBooleanValueGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        ToBsonStringValueGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToBsonDateValueGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToBsonTimeValueGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToBsonDateTimeValueGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToBsonObjectIdValueGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToBsonUuidValueGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToBsonStdListValueGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required?
+      generate_required_bson_value_code
+    else
+      generate_optional_bson_value_code
+    end
+  end
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{@field_conf.store_name_const_name}, #{@field_conf.getter_name}().toBsonValue());\n"
+  end
+
+  def generate_optional_bson_value_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_bson_value_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{@field_conf.store_name_const_name}, #{@temp_field_name}.toBsonValue());\n"
+  end
+
+end
+
+
+
+
+class ToBsonIntValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonLongValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt64(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonInt64(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDoubleValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonDouble(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonDouble(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDecimalValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDecimal128(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDecimal128(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonBooleanValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonBoolean.valueOf(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonBoolean.valueOf(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonStringValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonString(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonString(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDateValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonTimeValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonInt32(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonDateTimeValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDateTime(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonDateTime(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonObjectIdValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, new BsonObjectId(#{field_conf.getter_name}()));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, new BsonObjectId(#{temp_field_name}));\n"
+  end
+
+end
+
+
+
+class ToBsonUuidValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, #{to_bson_value_code("#{field_conf.getter_name}()")});\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, #{to_bson_value_code(temp_field_name)});\n"
+  end
+
+  private
+  def to_bson_value_code(variable_name)
+    if field_conf.has_modifier?('legacy')
+      "new BsonBinary(#{variable_name}, UuidRepresentation.JAVA_LEGACY)"
+    else
+      "new BsonBinary(#{variable_name})"
+    end
+  end
+
+end
+
+
+
+class ToBsonStdListValueGenerator < ToBsonFieldValueGenerator
+
+  def generate_required_bson_value_code
+    "        _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonArray(#{field_conf.getter_name}(), #{map_to_bson_value_code}));\n"
+  end
+
+  def generate_optional_variable_bson_value_code
+    "            _bsonValue.put(#{field_conf.store_name_const_name}, BsonValueUtil.toBsonArray(#{temp_field_name}, #{map_to_bson_value_code}));\n"
+  end
+
+  private
+
+  def map_to_bson_value_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      "BsonInt32::new"
+    when 'long'
+      "BsonInt64::new"
+    when 'double'
+      "BsonDouble::new"
+    when 'decimal'
+      "BsonValueUtil::toBsonDecimal128"
+    when 'string'
+      "BsonString::new"
+    when 'date'
+      'BsonValueUtil::toBsonInt32'
+    when 'time'
+      'BsonValueUtil::toBsonInt32'
+    when 'datetime'
+      'BsonValueUtil::toBsonDateTime'
+    when 'object-id'
+      'BsonObjectId::new'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> new BsonBinary(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonBinary::new'
+      end
+    else
+      raise ArgumentError, "Unsupported value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+
+class ToBsonValueGenerator
+
+  attr_reader :config, :model_conf, :to_bson_field_value_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @to_bson_field_value_generators = model_conf.fields.filter do |field_conf|
+      field_conf.store_field?
+    end.map do |field_conf|
+      ToBsonFieldValueGenerator.from(field_conf, config, model_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public BsonDocument toBsonValue() {\n"
+    code << "        var _bsonValue = new BsonDocument();\n"
+    @to_bson_field_value_generators.each do |to_bson_field_value_generator|
+      code << to_bson_field_value_generator.generate
+    end
+    code << "        return _bsonValue;\n"
+    code << "    }\n"
+  end
+
+end
+
+class LoadFieldGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int'
+        LoadIntGenerator.new(config, model_conf, field_conf)
+      when 'long'
+        LoadLongGenerator.new(config, model_conf, field_conf)
+      when 'double'
+        LoadDoubleGenerator.new(config, model_conf, field_conf)
+      when 'decimal'
+        LoadDecimalGenerator.new(config, model_conf, field_conf)
+      when 'boolean'
+        LoadBooleanGenerator.new(config, model_conf, field_conf)
+      when 'string'
+        LoadStringGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        LoadDateGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        LoadTimeGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        LoadDateTimeGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        LoadObjectIdGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        LoadUuidGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        LoadStdListGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        LoadMapGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{@field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required? and not @field_conf.readonly?
+      generate_load_required_field_code
+    else
+      generate_load_optional_field_code
+    end
+  end
+
+  def generate_load_required_field_code
+    "        BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).ifPresentOrElse(#{@field_conf.getter_name}()::load, #{@field_conf.getter_name}()::clean);\n"
+  end
+
+  def generate_load_optional_field_code
+    code = ''
+    code << "        BsonUtil.documentValue(src, #{@field_conf.store_name_const_name}).ifPresentOrElse(\n"
+    code << "                it -> {\n"
+    code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
+    code << "                    if (#{@temp_field_name} != null) {\n"
+    code << "                        #{@temp_field_name}.detach();\n"
+    code << "                    }\n"
+    code << "                    this.#{@field_conf.name} = new #{@field_conf.model}()\n"
+    code << "                            .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name})\n"
+    code << "                            .load(it);\n"
+    code << "                },\n"
+    code << "                () -> {\n"
+    code << "                    var #{@temp_field_name} = this.#{@field_conf.name};\n"
+    code << "                    if (#{@temp_field_name} != null) {\n"
+    code << "                        #{@temp_field_name}.detach();\n"
+    code << "                        this.#{@field_conf.name} = null;\n"
+    code << "                    }\n"
+    code << "                }\n"
+    code << "        );\n"
+  end
+
+end
+
+
+
+
+class LoadIntGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(0);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.intValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    IntDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadLongGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(0L);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.longValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    LongDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDoubleGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(Double.NaN);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.doubleValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DoubleDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDecimalGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(BigDecimal.ZERO);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.decimalValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DecimalDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadBooleanGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(false);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.booleanValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    BooleanDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadStringGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(\"\");\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.stringValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    StringDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDateGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(LocalDate.EPOCH);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.dateValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DateDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadTimeGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(LocalTime.MIDNIGHT);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.timeValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    TimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadDateTimeGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if has_default_value?
+      "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(#{default_value_code});\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(BsonModelConstants.EPOCH_DATE_TIME);\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.dateTimeValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+  private
+
+  def has_default_value?
+    not @field_conf.default.nil?
+  end
+
+  def default_value_code
+    DateTimeDefaultValue.generate_code(@config, @model_conf, @field_conf)
+  end
+
+end
+
+
+
+class LoadObjectIdGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    "        #{@field_conf.name} = BsonUtil.objectIdValue(src, #{@field_conf.store_name_const_name}).orElseThrow();\n"
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.objectIdValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+  end
+
+end
+
+
+
+class LoadUuidGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    if field_conf.has_modifier?('legacy')
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}, UuidRepresentation.JAVA_LEGACY).orElseThrow();\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}).orElseThrow();\n"
+    end
+  end
+
+  def generate_load_optional_field_code
+    if field_conf.has_modifier?('legacy')
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}, UuidRepresentation.JAVA_LEGACY).orElse(null);\n"
+    else
+      "        #{@field_conf.name} = BsonUtil.uuidValue(src, #{@field_conf.store_name_const_name}).orElse(null);\n"
+    end
+  end
+
+end
+
+
+
+class LoadStdListGenerator < LoadFieldGenerator
+
+  def generate_load_required_field_code
+    "        #{@field_conf.name} = BsonUtil.arrayValue(src, #{@field_conf.store_name_const_name}).map(#{map_code}).orElse(List.of());\n"
+  end
+
+  def generate_load_optional_field_code
+    "        #{@field_conf.name} = BsonUtil.arrayValue(src, #{@field_conf.store_name_const_name}).map(#{map_code}).orElse(null);\n"
+  end
+
+  private
+  def map_code
+    value_type = field_conf.value
+    case value_type
+    when 'int'
+      'BsonValueUtil::mapToIntegerList'
+    when 'long'
+      'BsonValueUtil::mapToLongList'
+    when 'double'
+      'BsonValueUtil::mapToDoubleList'
+    when 'decimal'
+      'BsonValueUtil::mapToBigDecimalList'
+    when 'string'
+      'BsonValueUtil::mapToStringList'
+    when 'date'
+      'BsonValueUtil::mapToLocalDateList'
+    when 'time'
+      'BsonValueUtil::mapToLocalTimeList'
+    when 'datetime'
+      'BsonValueUtil::mapToLocalDateTimeList'
+    when 'object-id'
+      'BsonValueUtil::mapToObjectIdList'
+    when 'uuid'
+      if field_conf.has_modifier?('legacy')
+        'it -> BsonValueUtil.mapToUuidList(it, UuidRepresentation.JAVA_LEGACY)'
+      else
+        'BsonValueUtil::mapToUuidList'
+      end
+    when 'object'
+      "it -> BsonValueUtil.mapToObjectList(it, (bson) -> new #{field_conf.model}().load(bson))"
+    else
+      raise ArgumentError, "Unsupported value type: #{value_type}"
+    end
+  end
+
+end
+
+
+
+class LoadMapGenerator < LoadFieldGenerator
+
+  attr_reader :property_generator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+    @property_generator = MapPropertyGenerator.new(config, model_conf, field_conf)
+  end
+
+    def generate_load_optional_field_code
+    code = ''
+    code << "        BsonUtil.documentValue(src, #{field_conf.store_name_const_name}).ifPresentOrElse(\n"
+    code << "                it -> {\n"
+    code << "                    var #{temp_field_name} = this.#{field_conf.name};\n"
+    code << "                    if (#{temp_field_name} != null) {\n"
+    code << "                        #{temp_field_name}.unbind()\n"
+    code << "                    }\n"
+    code << "                    this.#{field_conf.name} = #{@property_generator.generate_init_code}\n"
+    code << "                            .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name})\n"
+    code << "                            .load(it);\n"
+    code << "                },\n"
+    code << "                () -> {\n"
+    code << "                    var #{temp_field_name} = this.#{field_conf.name};\n"
+    code << "                    if (#{temp_field_name} != null) {\n"
+    code << "                        #{temp_field_name}.unbind()\n"
+    code << "                        this.#{field_conf.name} = null;\n"
+    code << "                    }\n"
+    code << "                }\n"
+    code << "        );\n"
+  end
+
+end
+
+
+
+
+class LoadGenerator
+
+  attr_reader :config, :model_conf, :load_field_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @load_field_generators = model_conf.fields.select do |field_conf|
+      field_conf.store_field? or field_conf.readonly?
+    end.map do |field_conf|
+      LoadFieldGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} load(BsonDocument src) {\n"
+    code << "        resetStates();\n"
+    @load_field_generators.each do |load_field_generator|
+      code << load_field_generator.generate
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
+class ToStoreFieldDataGenerator
+
+  class << self
+
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        ToStoreSimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        ToStoreDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        ToStoreTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        ToStoreDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        ToStoreObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        ToStoreUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        ToStoreStdListDataGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        ToStoreMapDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if @field_conf.required?
+      generate_required_to_store_data_code
+    else
+      generate_optional_to_store_data_code
+    end
+  end
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{@field_conf.name} = #{@field_conf.getter_name}().toStoreData();\n"
+  end
+
+  def generate_optional_to_store_data_code
+    code = ''
+    code << "        var #{@temp_field_name} = #{@field_conf.getter_name}();\n"
+    code << "        if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_to_store_data_code
+    code << "        }\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{@field_conf.name} = #{@temp_field_name}.toStoreData();\n"
+  end
+
+end
+
+
+
+
+class ToStoreSimpleDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name};\n"
+  end
+
+end
+
+
+
+class ToStoreDateDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreTimeDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toNumber(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreDateTimeDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = DateTimeUtil.toEpochMilli(#{field_conf.getter_name}());\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = DateTimeUtil.toEpochMilli(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class ToStoreObjectIdDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}().toHexString();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}.toHexString();\n"
+  end
+
+end
+
+
+
+class ToStoreUuidDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}().toString();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}.toString();\n"
+  end
+
+end
+
+
+
+class ToStoreStdListDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = #{field_conf.getter_name}()#{value_map_code};\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = #{temp_field_name}#{value_map_code};\n"
+  end
+
+  private
+  def value_map_code
+    case field_conf.value
+    when 'date'
+      ".stream().map(DateTimeUtil::toNumber).toList()"
+    when 'time'
+      ".stream().map(DateTimeUtil::toNumber).toList()"
+    when 'datetime'
+      ".stream().map(DateTimeUtil::toEpochMilli).toList()"
+    when 'object-id'
+      ".stream().map(ObjectId::toHexString).toList()"
+    when 'uuid'
+      ".stream().map(UUID::toString).toList()"
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+class ToStoreMapDataGenerator < ToStoreFieldDataGenerator
+
+  def generate_required_to_store_data_code
+    "        _storeData.#{field_conf.name} = (Map<String, #{store_data_value_type}>) #{field_conf.getter_name}().toStoreData();\n"
+  end
+
+  def generate_optional_variable_to_store_data_code
+    "            _storeData.#{field_conf.name} = (Map<String, #{store_data_value_type}>) #{temp_field_name}.toStoreData();\n"
+  end
+
+  private
+  def store_data_value_type
+    case field_conf.value
+    when 'int'
+      'Integer'
+    when 'long', 'datetime'
+      'Long'
+    when 'double'
+      'Double'
+    when 'decimal'
+      'BigDecimal'
+    when 'string'
+      'String'
+    when 'object'
+      "#{@field_conf.model}.#{@field_conf.model}StoreData"
+    else
+      raise ArgumentError, "Unsupported value type: #{value}"
+    end
+  end
+
+end
+
+
+
+
+class ToStoreDataGenerator
+
+  attr_reader :config, :model_conf, :field_confs, :to_store_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+    @to_store_field_data_generators = @field_confs.map do |field_conf|
+      ToStoreFieldDataGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    if @field_confs.any? { |field_conf| field_conf.type == 'map' }
+      code << "    @SuppressWarnings(\"unchecked\")\n"
+    end
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name}StoreData toStoreData() {\n"
+    code << "        var _storeData = new #{@model_conf.name}StoreData();\n"
+    @to_store_field_data_generators.each do |to_store_field_data_generator|
+      code << to_store_field_data_generator.generate
+    end
+    code << "        return _storeData;\n"
+    code << "    }\n"
+  end
+
+end
+
+class LoadStoreFieldDataGenerator
+
+  class << self
+  
+    def from(config, model_conf, field_conf)
+      case field_conf.type
+      when 'int', 'long', 'double', 'decimal', 'boolean', 'string'
+        LoadStoreSimpleDataGenerator.new(config, model_conf, field_conf)
+      when 'date'
+        LoadStoreDateDataGenerator.new(config, model_conf, field_conf)
+      when 'time'
+        LoadStoreTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'datetime'
+        LoadStoreDateTimeDataGenerator.new(config, model_conf, field_conf)
+      when 'object-id'
+        LoadStoreObjectIdDataGenerator.new(config, model_conf, field_conf)
+      when 'uuid'
+        LoadStoreUuidDataGenerator.new(config, model_conf, field_conf)
+      when 'std-list'
+        LoadStoreStdListDataGenerator.new(config, model_conf, field_conf)
+      when 'map'
+        LoadStoreMapDataGenerator.new(config, model_conf, field_conf)
+      else
+        new(config, model_conf, field_conf)
+      end
+    end
+  
+  end
+
+  attr_reader :config, :model_conf, :field_conf, :temp_field_name
+
+  def initialize(config, model_conf, field_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_conf = field_conf
+    @temp_field_name = "_#{field_conf.name}"
+  end
+
+  def generate
+    if field_conf.required?
+      generate_required_load_store_data_code
+    else
+      generate_optional_load_store_data_code
+    end
+  end
+
+  def generate_required_load_store_data_code
+    "            #{@field_conf.getter_name}().loadStoreData(_storeData.#{@field_conf.name});\n"
+  end
+
+  def generate_optional_load_store_data_code
+    code = ''
+    code << "            var #{@temp_field_name} = _storeData.#{@field_conf.name};\n"
+    code << "            if (#{@temp_field_name} != null) {\n"
+    code << generate_optional_variable_load_store_data_code
+    code << "            }\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    code = ''
+    code << "                #{@field_conf.name} = new #{@field_conf.model}()\n"
+    code << "                        .parent(this).index(#{@field_conf.field_index_const_name}).key(#{@field_conf.store_name_const_name}).loadStoreData(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+
+class LoadStoreSimpleDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = _storeData.#{field_conf.name};\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = #{temp_field_name};\n"
+  end
+
+end
+
+
+
+class LoadStoreDateDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.toDate(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.toDate(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreTimeDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.toTime(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.toTime(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreDateTimeDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = DateTimeUtil.ofEpochMilli(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = DateTimeUtil.ofEpochMilli(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreObjectIdDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = new ObjectId(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = new ObjectId(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreUuidDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = UUID.fromString(_storeData.#{field_conf.name});\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = UUID.fromString(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+class LoadStoreStdListDataGenerator < LoadStoreFieldDataGenerator
+
+  def generate_required_load_store_data_code
+    "            #{field_conf.name} = _storeData.#{field_conf.name}#{value_map_code};\n"
+  end
+
+  def generate_optional_variable_load_store_data_code
+    "                #{field_conf.name} = #{temp_field_name}#{value_map_code};\n"
+  end
+
+  private
+  def value_map_code
+    case field_conf.value
+    when 'date'
+      '.stream().map(DateTimeUtil::toDate).toList()'
+    when 'time'
+      '.stream().map(DateTimeUtil::toTime).toList()'
+    when 'datetime'
+      '.stream().map(DateTimeUtil::ofEpochMilli).toList()'
+    when 'object-id'
+      '.stream().map(ObjectId::new).toList()'
+    when 'uuid'
+      '.stream().map(UUID::fromString).toList()'
+    else
+      ''
+    end
+  end
+
+end
+
+
+
+class LoadStoreMapDataGenerator < LoadStoreFieldDataGenerator
+
+  attr_reader :property_generator
+
+  def initialize(config, model_conf, field_conf)
+    super(config, model_conf, field_conf)
+    @property_generator = MapPropertyGenerator.new(config, model_conf, field_conf)
+  end
+
+  def generate_optional_variable_load_store_data_code
+    code = ''
+    code << "                #{field_conf.name} = #{@property_generator.generate_init_code}\n"
+    code << "                        .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name})\n"
+    code << "                        .loadStoreData(#{temp_field_name});\n"
+  end
+
+end
+
+
+
+
+class LoadStoreDataGenerator
+
+  attr_reader :config, :model_conf, :field_confs, :load_store_field_data_generators
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+    @load_store_field_data_generators = @field_confs.map do |field_conf|
+      LoadStoreFieldDataGenerator.from(config, model_conf, field_conf)
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} loadStoreData(Object data) {\n"
+    code << "        resetStates();\n"
+    code << "        if (data instanceof #{@model_conf.name}StoreData _storeData) {\n"
+    @load_store_field_data_generators.each do |load_store_field_data_generator|
+      code << load_store_field_data_generator.generate
+    end
+    code << "        }\n"
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+end
+
+class AnyUpdatedGenerator
+
+  attr_reader :config, :model_conf, :field_confs
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public boolean anyUpdated() {\n"
+    if @field_confs.empty?
+      code << "        return false;\n"
+    else
+      code << "        if (isFullUpdate()) {\n"
+      code << "            return true;\n"
+      code << "        }\n"
+      code << "        var changedFields = this.changedFields;\n"
+      code << "        if (changedFields.isEmpty()) {\n"
+      code << "            return false;\n"
+      code << "        }\n"
+      @field_confs.each do |field_conf|
+        code << generate_if_field_changed_code(field_conf)
+      end
+      code << "        return false;\n"
+    end
+    code << "    }\n"
+  end
+
+  private
+  def generate_if_field_changed_code(field_conf)
+    code = ''
+    if field_conf.required?
+      case field_conf.type
+      when 'object', 'map'
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}().anyUpdated()) {\n"
+      else
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+      end
+      code << "            return true;\n"
+      code << "        }\n"
+    else
+      case field_conf.type
+      when 'object', 'map'
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+        code << "            return _#{field_conf.name} != null && _#{field_conf.name}.anyUpdated();\n"
+        code << "        }\n"
+      else
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}() != null) {\n"
+        code << "            return true;\n"
+        code << "        }\n"
+      end
+    end
+  end
+
+end
+
+class DeletedDataGenerator
+
+  attr_reader :config, :model_conf, :field_confs
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter do |field_conf|
+      field_conf.display_field?
+    end.filter do |field_conf|
+      field_conf.store_field? or field_conf.virtual?
+    end.filter do |field_conf|
+      case field_conf.type
+      when 'object', 'map'
+        true
+      else
+        not field_conf.required?
+      end
+    end
+  end
+
+  def generate_append_deleted_data_code
+    code = ''
+    code << "    @Override\n"
+    code << "    protected void appendDeletedData(Map<String, ? super Object> data) {\n"
+    code << "        var changedFields = this.changedFields;\n"
+    field_confs.each do |field_conf|
+      code << generate_append_deleted_field_data_code(field_conf)
+    end
+    code << "    }\n"
+  end
+  
+  private
+  def generate_append_deleted_field_data_code(field_conf)
+    code = ''
+    case field_conf.type
+    when 'object', 'map'
+      if field_conf.required?
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            var _#{field_conf.name} = #{field_conf.getter_name}().toDeleted();\n"
+        code << "            if (_#{field_conf.name} != null) {\n"
+        code << "                data.put(#{field_conf.display_name_const_name}, _#{field_conf.name});\n"
+        code << "            }\n"
+        code << "        }\n"
+      else
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+        code << "            if (_#{field_conf.name} == null) {\n"
+        code << "                data.put(#{field_conf.display_name_const_name}, BsonModelConstants.DELETED_VALUE);\n"
+        code << "            } else {\n"
+        code << "                var _#{field_conf.name}Deleted = _#{field_conf.name}.toDeleted();\n"
+        code << "                if (_#{field_conf.name}Deleted != null) {\n"
+        code << "                    data.put(#{field_conf.display_name_const_name}, _#{field_conf.name}Deleted);\n"
+        code << "                }\n"
+        code << "            }\n"
+        code << "        }\n"
+      end
+    else
+      code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}() == null) {\n"
+      code << "            data.put(#{field_conf.display_name_const_name}, BsonModelConstants.DELETED_VALUE);\n"
+      code << "        }\n"
+    end
+  end
+
+end
+
+class DeletedGenerator
+
+  attr_reader :config, :model_conf, :field_confs
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.filter do |field_conf|
+      field_conf.store_field?
+    end.filter do |field_conf|
+      case field_conf.type
+      when 'object', 'map'
+        true
+      else
+        not field_conf.required?
+      end
+    end
+  end
+
+  def generate_any_deleted_code
+    code = ''
+    code << "    @Override\n"
+    code << "    public boolean anyDeleted() {\n"
+    code << "        if (isFullUpdate()) {\n"
+    code << "            return false;\n"
+    code << "        }\n"
+    code << "        var changedFields = this.changedFields;\n"
+    code << "        if (changedFields.isEmpty()) {\n"
+    code << "            return false;\n"
+    code << "        }\n"
+    field_confs.each do |field_conf|
+      code << generate_check_field_deleted_code(field_conf)
+    end
+    code << "        return false;\n"
+    code << "    }\n"
+  end
+
+  def generate_deleted_size_code
+    code = ''
+    code << "    @Override\n"
+    code << "    public int deletedSize() {\n"
+    code << "        if (isFullUpdate()) {\n"
+    code << "            return 0;\n"
+    code << "        }\n"
+    code << "        var changedFields = this.changedFields;\n"
+    code << "        if (changedFields.isEmpty()) {\n"
+    code << "            return 0;\n"
+    code << "        }\n"
+    code << "        var __size = 0;\n"
+    field_confs.each do |field_conf|
+      code << generate_increase_field_deleted_code(field_conf)
+    end
+    code << "        return __size;\n"
+    code << "    }\n"
+  end
+
+  private
+  def generate_check_field_deleted_code(field_conf)
+    code = ''
+    case field_conf.type
+    when 'object', 'map'
+      if field_conf.required?
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}().anyDeleted()) {\n"
+        code << "            return true;\n"
+        code << "        }\n"
+      else
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+        code << "            if (_#{field_conf.name} == null || _#{field_conf.name}.anyDeleted()) {\n"
+        code << "                return true;\n"
+        code << "            }\n"
+        code << "        }\n"
+      end
+    else
+      code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}() == null) {\n"
+      code << "            return true;\n"
+      code << "        }\n"
+    end
+  end
+
+  def generate_increase_field_deleted_code(field_conf)
+    code = ''
+    case field_conf.type
+    when 'object', 'map'
+      if field_conf.required?
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            __size += #{field_conf.getter_name}().deletedSize();\n"
+        code << "        }\n"
+      else
+        code << "        if (changedFields.get(#{field_conf.field_index_const_name})) {\n"
+        code << "            var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+        code << "            if (_#{field_conf.name} == null) {\n"
+        code << "                __size++;\n"
+        code << "            } else {\n"
+        code << "                __size += _#{field_conf.name}.deletedSize();\n"
+        code << "            }\n"
+        code << "        }\n"
+      end
+    else
+      code << "        if (changedFields.get(#{field_conf.field_index_const_name}) && #{field_conf.getter_name}() == null) {\n"
+      code << "            __size++;\n"
+      code << "        }\n"
+    end
+  end
+
+end
+
+class DeepCopyFromGenerator
+
+  attr_reader :config, :model_conf, :field_confs
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields.select do |field_conf|
+      field_conf.store_field?
+    end
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} deepCopyFrom(#{@model_conf.name} src) {\n"
+    @field_confs.each do |field_conf|
+      code << generate_deep_copy_from_field_code(field_conf)
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+  private
+  def generate_deep_copy_from_field_code(field_conf)
+    code = ''
+    case field_conf.type
+    when 'object', 'map'
+      if field_conf.required?
+        code << "        #{field_conf.getter_name}().deepCopyFrom(src.#{field_conf.getter_name}());\n"
+      else
+        code << "        var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+        code << "        if (_#{field_conf.name} != null) {\n"
+        code << "            _#{field_conf.name}.detach();\n"
+        code << "            this.#{field_conf.name} = null;\n"
+        code << "        }\n"
+        code << "        _#{field_conf.name} = src.#{field_conf.getter_name}();\n"
+        code << "        if (_#{field_conf.name} != null) {\n"
+        code << "            this.#{field_conf.name} = _#{field_conf.name}.deepCopy()\n"
+        code << "                    .parent(this).index(#{field_conf.field_index_const_name}).key(#{field_conf.store_name_const_name});\n"
+        code << "        }\n"
+      end
+    when 'std-list'
+      if field_conf.required?
+        code << "        #{field_conf.name} = new ArrayList<>(src.#{field_conf.getter_name}());\n"
+      else
+        code << "        var _#{field_conf.name} = src.#{field_conf.getter_name}();\n"
+        code << "        if (_#{field_conf.name} != null) {\n"
+        code << "            #{field_conf.name} = new ArrayList<>(_#{field_conf.name});\n"
+        code << "        } else {\n"
+        code << "            #{field_conf.name} = null;\n"
+        code << "        }\n"
+      end
+    else
+      code << "        #{field_conf.name} = src.#{field_conf.getter_name}();\n"
+    end
+  end
+  
+end
+
+class ToStringGenerator
+
+  attr_reader :config, :model_conf, :field_confs
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @field_confs = model_conf.fields
+  end
+
+  def generate
+    code = ''
+    code << "    @Override\n"
+    code << "    public String toString() {\n"
+    if field_confs.empty?
+      code << "        return \"#{@model_conf.name}()\";\n"
+    else
+      code << "        return \"#{@model_conf.name}(#{@field_confs[0].name}=\" + #{@field_confs[0].getter_name}() +\n"
+      field_confs[1..].each do |field_conf|
+        code << "                \", #{field_conf.name}=\" + #{field_conf.getter_name}() +\n"
+      end
+      code << "                \")\";\n"
+    end
+    code << "    }\n"
+  end
+
+end
+
+
+
+class ModelGenerator
+
+  attr_reader :config,
+              :model_conf,
+              :model_name,
+              :store_fields,
+              :imports_generator,
+              :consts_generator,
+              :properties_generator,
+              :clean_fields_generator,
+              :append_field_updates_generator,
+              :append_updated_data_generator,
+              :to_display_data_generator,
+              :to_bson_value_generator,
+              :load_generator,
+              :to_store_data_generator,
+              :load_store_data_generator,
+              :any_updated_generator,
+              :deleted_data_generator,
+              :deleted_generator,
+              :deep_copy_from_generator,
+              :to_string_generator
+
+  def initialize(config, model_conf)
+    @config = config
+    @model_conf = model_conf
+    @model_name = model_conf.name
+    @store_fields = model_conf.fields.filter { |field_conf| field_conf.store_field? }
+    @imports_generator = ImportsGenerator.new(@config, @model_conf)
+    @consts_generator = ConstsGenerator.new(@config, @model_conf)
+    @properties_generator = PropertiesGenerator.new(@config, @model_conf)
+    @has_children = @store_fields.any? { |field_conf| field_conf.has_children? }
+    @clean_fields_generator = CleanFieldsGenerator.new(@config, @model_conf)
+    @append_field_updates_generator = AppendFieldUpdatesGenerator.new(@config, @model_conf)
+    @append_updated_data_generator = AppendUpdatedDataGenerator.new(@config, @model_conf)
+    @to_display_data_generator = ToDisplayDataGenerator.new(@config, @model_conf)
+    @to_bson_value_generator = ToBsonValueGenerator.new(@config, @model_conf)
+    @load_generator = LoadGenerator.new(@config, @model_conf)
+    @to_store_data_generator = ToStoreDataGenerator.new(@config, @model_conf)
+    @load_store_data_generator = LoadStoreDataGenerator.new(@config, @model_conf)
+    @any_updated_generator = AnyUpdatedGenerator.new(@config, @model_conf)
+    @deleted_data_generator = DeletedDataGenerator.new(@config, @model_conf)
+    @deleted_generator = DeletedGenerator.new(@config, @model_conf) 
+    @deep_copy_from_generator = DeepCopyFromGenerator.new(@config, @model_conf)
+    @to_string_generator = ToStringGenerator.new(@config, @model_conf)
+  end
+
+  def generate
+    code = generate_class_prefix_code
+    code << generate_consts_code
+    code << generate_store_data_class_code
+    code << generate_properties_code
+    code << generate_methods_code
+    code << generate_class_suffix_code
+  end
+
+  def has_children?
+    @has_children
+  end
+
+  private
+  def generate_class_prefix_code
+    code = generate_package_code
+    code << "\n"
+    code << generate_imports_code
+    code << "\n"
+    code << generate_class_declaration_code
+  end
+
+  def generate_package_code
+    "package #{@config.package};\n"
+  end
+
+  def generate_imports_code
+    @imports_generator.generate
+  end
+
+  def generate_class_declaration_code
+    code = "@NullMarked\n"
+    code << "public final class #{@model_name} extends #{generic_super_type} {\n"
+  end
+
+  def generic_super_type
+    case @model_conf.type
+    when 'object'
+      "AbstractObjectModel<#{@model_name}>"
+    when 'root'
+      "AbstractRootModel<#{@model_name}>"
+    else
+      raise ArgumentError, "Unknown model type: #{@model_conf.type}"
+    end
+  end
+
+  def generate_consts_code
+    @consts_generator.generate
+  end
+
+  def generate_store_data_class_code
+    StoreData::generate_class_code(@config, @model_conf)
+  end
+
+  def generate_properties_code
+    @properties_generator.generate_properties_code
+  end
+
+  def generate_methods_code
+    code = ''
+    if @model_conf.type == 'root'
+      code << generate_store_data_type_code
+    end
+    if has_children?
+      code << generate_reset_children_code
+    end
+    code << generate_clean_fields_code
+    code << generate_append_field_updates_code
+    code << generate_append_updated_data_code
+    code << generate_to_display_data_code
+    code << generate_to_bson_value_code
+    code << generate_load_code
+    code << generate_to_store_data_code
+    code << generate_load_store_data_code
+    code << generate_any_updated_code
+    code << generate_deleted_code
+    code << generate_deep_copy_code
+    code << generate_deep_copy_from_code
+    code << generate_to_string_code
+  end
+
+  def generate_store_data_type_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    protected Class<#{@model_name}StoreData> storeDataType() {\n"
+    code << "        return #{@model_name}StoreData.class;\n"
+    code << "    }\n"
+  end
+
+  def generate_reset_children_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    protected #{@model_name} resetChildren() {\n"
+    @store_fields.each do |field_conf|
+      if field_conf.has_children?
+        if field_conf.required?
+          code << "        #{field_conf.getter_name}().reset();\n"
+        else
+          code << "        var _#{field_conf.name} = #{field_conf.getter_name}();\n"
+          code << "        if (_#{field_conf.name} != null) {\n"
+          code << "            _#{field_conf.name}.reset();\n"
+          code << "        }\n"
+        end
+      end
+    end
+    code << "        return this;\n"
+    code << "    }\n"
+  end
+
+  def generate_clean_fields_code
+    code = "\n"
+    code << @clean_fields_generator.generate
+  end
+
+  def generate_append_field_updates_code
+    code = "\n"
+    code << @append_field_updates_generator.generate
+  end
+
+  def generate_append_updated_data_code
+    code = "\n"
+    code << @append_updated_data_generator.generate
+  end
+
+  def generate_to_display_data_code
+    code = "\n"
+    code << @to_display_data_generator.generate
+  end
+
+  def generate_to_bson_value_code
+    code = "\n"
+    code << @to_bson_value_generator.generate
+  end
+
+  def generate_load_code
+    code = "\n"
+    code << @load_generator.generate
+  end
+
+  def generate_to_store_data_code
+    code = "\n"
+    code << @to_store_data_generator.generate
+  end
+
+  def generate_load_store_data_code
+    code = "\n"
+    code << @load_store_data_generator.generate
+  end
+
+  def generate_any_updated_code
+    code = "\n"
+    code << @any_updated_generator.generate
+  end
+
+  def generate_deleted_code
+    code = ''
+    if @deleted_data_generator.field_confs.empty?
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public @Nullable Map<String, ?> toDeleted() {\n"
+      code << "        return null;\n"
+      code << "    }\n"
+    else
+      code << "\n"
+      code << @deleted_data_generator.generate_append_deleted_data_code
+    end
+    if @deleted_generator.field_confs.empty?
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public boolean anyDeleted() {\n"
+      code << "        return false;\n"
+      code << "    }\n"
+      code << "\n"
+      code << "    @Override\n"
+      code << "    public int deletedSize() {\n"
+      code << "        return 0;\n"
+      code << "    }\n"
+    else
+      code << "\n"
+      code << @deleted_generator.generate_any_deleted_code
+      code << "\n"
+      code << @deleted_generator.generate_deleted_size_code
+    end
+  end
+
+  def generate_deep_copy_code
+    code = "\n"
+    code << "    @Override\n"
+    code << "    public #{@model_conf.name} deepCopy() {\n"
+    code << "        return new #{@model_conf.name}().deepCopyFrom(this);\n"
+    code << "    }\n"
+  end
+  
+  def generate_deep_copy_from_code
+    code = "\n"
+    code << @deep_copy_from_generator.generate
+  end
+
+  def generate_to_string_code
+    code = "\n"
+    code << @to_string_generator.generate
+  end
+
+  def generate_class_suffix_code
+    code = "\n"
+    code << "}\n"
+  end
+
+end
+
+require 'fileutils'
+
+class Generator
+
+  attr_reader :config, :out_dir
+
+  def initialize(config, out_dir)
+    @config = config
+    @out_dir = out_dir
+  end
+
+  def generate
+    package_dir = generate_package_dir
+    generated_contents = @config.models.map do |model_conf|
+      puts "Generating model: #{model_conf.package}.#{model_conf.name}..."
+      content = ModelGenerator.new(@config, model_conf).generate
+      puts "OK"
+      [model_conf, content]
+    end
+    generated_contents.each do |model_conf, content|
+      file_path = File.join(package_dir, "#{model_conf.name}.java")
+      puts "Saving model: #{model_conf.package}.#{model_conf.name} => #{file_path}..."
+      File.write(file_path, content)
+      puts "OK"
+    end
+  end
+
+  private
+  def generate_package_dir
+    package_dir = File.join(@out_dir, File.join(config.package.split('.')))
+    unless File.directory?(package_dir)
+      puts "Creating package directory: #{@config.package} => #{package_dir}..."
+      FileUtils.mkdir_p(package_dir)
+      puts "OK"
+    end
+    package_dir
+  end
+
+end
+
+require 'yaml'
+
+config = Configurations.from(YAML.load_file(ARGV[0]))
+
+puts "package: #{config.package}"
+puts ""
+
+config.models.each do |model|
+  puts "------------------------------------------"
+  puts "model.package: #{model.package}"
+  puts "model.name: #{model.name}"
+  puts "model.type: #{model.type}"
+  puts "model.consts:"
+  model.consts.each do |const|
+    puts "  #{const.name}: #{const.type} = #{const.value}"
+  end
+  puts "model.fields:"
+  model.fields.each do |field|
+    puts "  #{field.index} - #{field.name}, #{field.store_name}, #{field.display_name}: #{field.type}  ==> #{field.instance_variables.filter { |var| not %w[@index @name @store_name @display_name @type].include?(var.to_s) }.map { |var| "#{var}=#{field.instance_variable_get(var)}" }.join(', ')}"
+  end
+end
+puts "==============================================="
+puts ""
+generator = Generator.new(config, ARGV[1])
+generator.generate
+
+puts ""
+
+puts "Done."

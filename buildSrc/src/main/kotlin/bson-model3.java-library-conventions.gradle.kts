@@ -11,24 +11,25 @@ repositories {
 
 dependencies {
     // libcommon-bom
-    api(platform("com.github.fmjsjx:libcommon-bom:4.1.0"))
-    // junit-bom
-    testImplementation(platform("org.junit:junit-bom:6.0.1"))
+    api(platform("com.github.fmjsjx:libcommon-bom:4.1.2"))
     // mongodb-driver-bom
-    api(platform("org.mongodb:mongodb-driver-bom:5.6.2"))
+    api(platform("org.mongodb:mongodb-driver-bom:5.6.4"))
     // log4j2
     implementation(platform("org.apache.logging.log4j:log4j-bom:2.25.3"))
+    // junit-bom
+    testImplementation(platform("org.junit:junit-bom:6.0.3"))
 
     constraints {
+        // JSpecify
+        compileOnly("org.jspecify:jspecify:1.0.0")
         implementation("org.slf4j:slf4j-api:2.0.17")
-        implementation("ch.qos.logback:logback-classic:1.5.24")
+        implementation("ch.qos.logback:logback-classic:1.5.32")
         api("com.jsoniter:jsoniter:0.9.23")
-        val jrubyVersion = "10.0.2.0"
+        val jrubyVersion = "10.0.3.0"
         implementation("org.jruby:jruby-complete:$jrubyVersion")
         implementation("org.jruby:jruby:$jrubyVersion")
         implementation("org.jruby:jruby-core:$jrubyVersion")
         implementation("org.jruby:jruby-stdlib:$jrubyVersion")
-        implementation("org.yaml:snakeyaml:2.4")
     }
 
 }
@@ -56,7 +57,7 @@ tasks.withType<JavaCompile> {
     options.release = javaVersion
 }
 
-tasks.withType<Javadoc>() {
+tasks.withType<Javadoc> {
     if (JavaVersion.current().isJava9Compatible) {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
