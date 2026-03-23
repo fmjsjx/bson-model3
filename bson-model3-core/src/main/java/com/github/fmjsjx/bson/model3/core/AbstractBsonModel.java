@@ -21,6 +21,12 @@ public abstract class AbstractBsonModel<T extends BsonValue, Self extends Abstra
     protected boolean fullUpdate;
     protected boolean changeNotified;
 
+    /**
+     * Constructs a new {@link AbstractBsonModel}.
+     */
+    public AbstractBsonModel() {
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <P extends BsonModel<?, ?>> @Nullable P parent() {

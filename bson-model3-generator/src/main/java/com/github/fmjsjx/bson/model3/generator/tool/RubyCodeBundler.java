@@ -27,6 +27,11 @@ public class RubyCodeBundler {
     private static final Pattern REQUIRE_RELATIVE_PATTERN =
             Pattern.compile("^\\s*require_relative\\s+['\"]([^'\"]+)['\"]\\s*$");
 
+    /**
+     * The entry point of the RubyCodeBundler program.
+     *
+     * @param args skip
+     */
     public static void main(String[] args) {
         var bundler = new RubyCodeBundler();
         var content = bundler.bundle(RUBY_MAIN_SCRIPT_FILE_PATH);
@@ -37,6 +42,12 @@ public class RubyCodeBundler {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Private constructor to prevent instantiation.
+     */
+    private RubyCodeBundler() {
     }
 
     /**

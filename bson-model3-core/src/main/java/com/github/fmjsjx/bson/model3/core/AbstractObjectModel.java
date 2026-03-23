@@ -26,6 +26,12 @@ public abstract class AbstractObjectModel<Self extends AbstractObjectModel<Self>
      */
     protected final BitSet changedFields = new BitSet();
 
+    /**
+     * Constructs a new {@link AbstractObjectModel}.
+     */
+    public AbstractObjectModel() {
+    }
+
     @Override
     public boolean isFieldChanged(int index) {
         return changedFields.get(index);
