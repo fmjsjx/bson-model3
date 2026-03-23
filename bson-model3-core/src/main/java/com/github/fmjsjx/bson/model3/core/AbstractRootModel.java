@@ -19,6 +19,12 @@ public abstract class AbstractRootModel<Self extends AbstractRootModel<Self>>
         extends AbstractObjectModel<Self> implements RootModel<Self> {
 
     /**
+     * Constructs a new {@link AbstractRootModel}.
+     */
+    public AbstractRootModel() {
+    }
+
+    /**
      * Always returns {@code null} because root models do not have parent
      * models.
      *
