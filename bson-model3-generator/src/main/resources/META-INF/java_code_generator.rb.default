@@ -421,8 +421,7 @@ class ImportsGenerator
                      'com.github.fmjsjx.bson.model3.core.util.*',
                      'org.bson.*',
                      'org.bson.conversions.Bson',
-                     'org.jspecify.annotations.NullMarked',
-                     'org.jspecify.annotations.Nullable']
+                     'org.jspecify.annotations.*']
     consts = @model_conf.consts
     fields = @model_conf.fields
     unless fields.filter { |field| field.store_field? }.empty?
